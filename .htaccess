@@ -1,17 +1,14 @@
-# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
-PassengerAppRoot "/home1/paulocis/MAILING"
-PassengerBaseURI "/"
-PassengerPython "/home1/paulocis/MAILING/venv/bin/python"
-# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
-
-# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
-<IfModule Litespeed>
-</IfModule>
-# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END
+Options +ExecCGI +FollowSymLinks
+AddHandler cgi-script .py .cgi
+DirectoryIndex passenger_wsgi.py
 
 RewriteEngine On
 
-# Servir archivos estáticos y media directamente si existen en el disco
+# 1. Servir archivos estáticos y media directamente si existen físicamente
 RewriteCond %{REQUEST_URI} ^/(static|media)/ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+
+# 2. Redirigir todas las demás peticiones a Django via CGI
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]
