@@ -24,11 +24,14 @@ from organizations.models import SuppressionEntry
 
 logger = logging.getLogger(__name__)
 
-def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url="http://localhost:8000"):
+def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=None):
     """
     Convierte los bloques JSON y el tema visual en HTML profesional con colores globales.
     Reemplaza enlaces con URLs de seguimiento para detectar clics y conversiones.
     """
+    if not base_site_url:
+        base_site_url = getattr(settings, 'SITE_URL', 'https://mailing.humm.cl')
+
     if isinstance(blocks_data, dict):
         theme = blocks_data.get('theme', {})
         blocks = blocks_data.get('blocks', [])

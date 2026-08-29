@@ -22,7 +22,7 @@
             </div>
             
             <div class="pt-2 text-center">
-                <button @click="navigator.clipboard.writeText('Plataforma: Hummailing\nUsuario: {{ target_user.username }}\nNueva Contraseña Temporal: {{ temp_password }}'); copied = true; setTimeout(() => copied = false, 2500)" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg text-xs shadow transition-colors flex items-center justify-center space-x-2">
+                <button @click="navigator.clipboard.writeText('Plataforma: Hummailing ({{ request.scheme }}://{{ request.get_host }})\nUsuario: {{ target_user.username }}\nNueva Contraseña Temporal: {{ temp_password }}'); copied = true; setTimeout(() => copied = false, 2500)" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg text-xs shadow transition-colors flex items-center justify-center space-x-2">
                     <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Datos'"></span>
                 </button>
             </div>

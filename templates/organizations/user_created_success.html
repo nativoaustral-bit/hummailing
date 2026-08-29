@@ -30,11 +30,11 @@
             </div>
             <div class="flex justify-between items-center pt-1">
                 <span class="font-bold text-slate-400 uppercase">URL de Acceso</span>
-                <span class="font-mono text-slate-600">http://localhost:8000</span>
+                <span class="font-mono text-slate-600">{{ request.scheme }}://{{ request.get_host }}</span>
             </div>
             
             <div class="pt-3 text-center">
-                <button @click="navigator.clipboard.writeText('Plataforma: Hummailing (http://localhost:8000)\nUsuario: {{ created_user.username }}\nContraseña Temporal: {{ temp_password }}'); copied = true; setTimeout(() => copied = false, 2500)" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg text-xs shadow transition-colors flex items-center justify-center space-x-2">
+                <button @click="navigator.clipboard.writeText('Plataforma: Hummailing ({{ request.scheme }}://{{ request.get_host }})\nUsuario: {{ created_user.username }}\nContraseña Temporal: {{ temp_password }}'); copied = true; setTimeout(() => copied = false, 2500)" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg text-xs shadow transition-colors flex items-center justify-center space-x-2">
                     <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Datos de Acceso'"></span>
                 </button>
             </div>
