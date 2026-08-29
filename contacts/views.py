@@ -3,7 +3,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.core.paginator import Paginator
-import pandas as pd
 from .models import Contact, Tag, Segment
 from organizations.models import SuppressionEntry, ActivityLog
 
@@ -157,6 +156,7 @@ def import_contacts(request):
         tag_name = request.POST.get('tag', '').strip()
         
         try:
+            import pandas as pd
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file)
             elif file.name.endswith(('.xls', '.xlsx')):

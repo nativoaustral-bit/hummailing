@@ -30,9 +30,10 @@ if env_file.exists():
 
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-!3ob)ufig8h*%ozwfv33$pa$(bv&bw*a-8oyj$l#_g_z^se47c')
 
-DEBUG = env('DEBUG', default=True)
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['mailing.humm.cl', 'humm.cl', 'www.humm.cl', 'localhost', '127.0.0.1', '*'])
+
 
 
 # Application definition
@@ -154,7 +155,11 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 # Resend API
 import os
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY', 're_your_resend_api_key_here')
+RESEND_API_KEY = env('RESEND_API_KEY', default='re_your_resend_api_key_here')
+
 

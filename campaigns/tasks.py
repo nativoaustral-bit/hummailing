@@ -1,8 +1,21 @@
 import logging
 from django.utils import timezone
 from django.conf import settings
-from django.db.models import Q
-from celery import shared_task
+try:
+    from celery import shared_task
+except Exception:
+    def shared_task(func):
+        class TaskWrapper:
+            def __init__(self, f):
+                self.f = f
+            def __call__(self, *args, **kwargs):
+                return self.f(*args, **kwargs)
+            def delay(self, *args, **kwargs):
+                return self.f(*args, **kwargs)
+            def apply_async(self, args=(), kwargs=None, **options):
+                return self.f(*args, **(kwargs or {}))
+        return TaskWrapper(func)
+
 import resend
 
 from .models import Campaign, CampaignLink, TrackingEvent
