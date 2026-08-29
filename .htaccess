@@ -1,3 +1,9 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home1/paulocis/MAILING"
+PassengerBaseURI "/"
+PassengerPython "/home1/paulocis/MAILING/venv/bin/python"
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
 Options +FollowSymLinks
 DirectoryIndex passenger_wsgi.py
 
@@ -8,6 +14,6 @@ RewriteCond %{REQUEST_URI} ^/(static|media)/ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# 2. Redirigir todas las demás peticiones a Django
+# 2. Enrutamiento hacia Django
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]

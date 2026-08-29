@@ -8,6 +8,13 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings'
 from config.wsgi import application as _application
 
 def application(environ, start_response):
+    # Limpiar prefijo de script si Apache reescribe hacia passenger_wsgi.py
+    path_info = environ.get('PATH_INFO', '')
+    if path_info.startswith('/passenger_wsgi.py'):
+        environ['PATH_INFO'] = path_info[len('/passenger_wsgi.py'):] or '/'
+    elif path_info.startswith('passenger_wsgi.py'):
+        environ['PATH_INFO'] = path_info[len('passenger_wsgi.py'):] or '/'
+        
     environ['SCRIPT_NAME'] = ''
     return _application(environ, start_response)
 
