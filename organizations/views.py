@@ -264,10 +264,11 @@ def user_create(request):
         role = request.POST.get('role', 'org_admin')
         org_id = request.POST.get('organization')
         
-        # Generar o tomar contraseña
+        # Generar o tomar contraseña (alfabeto sin caracteres ambiguos como 0/O o 1/l/I)
         password_type = request.POST.get('password_type', 'auto')
         if password_type == 'auto':
-            chars = string.ascii_letters + string.digits + '!@#$'
+            # Caracteres 100% legibles sin ambigüedad
+            chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!#$"
             temp_password = ''.join(secrets.choice(chars) for _ in range(10))
         else:
             temp_password = request.POST.get('custom_password', '').strip()
@@ -317,7 +318,7 @@ def user_reset_password(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
     
     if request.method == 'POST':
-        chars = string.ascii_letters + string.digits + '!@#$'
+        chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!#$"
         temp_password = ''.join(secrets.choice(chars) for _ in range(10))
         
         target_user.set_password(temp_password)
