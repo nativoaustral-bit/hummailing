@@ -294,21 +294,31 @@
                                     <template x-if="block.type === 'header'">
                                         <div class="space-y-3 text-xs">
                                             <div>
-                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Logo de la Empresa</label>
-                                                <template x-if="block.content.logo_url">
-                                                    <div class="flex items-center space-x-3 bg-slate-100 p-2.5 rounded-xl mb-2 border border-slate-200">
-                                                        <img :src="block.content.logo_url" class="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1 border">
-                                                        <div class="flex-1 min-w-0">
-                                                            <p class="text-[11px] font-bold text-slate-700 truncate">Logo cargado</p>
-                                                            <button type="button" @click="block.content.logo_url = ''" class="text-[10px] text-red-600 hover:underline font-semibold">
-                                                                Quitar Logo
-                                                            </button>
-                                                        </div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Logo de la Empresa</label>
+                                                
+                                                <!-- Previsualización del Logo en Sidebar si existe -->
+                                                <div x-show="block.content.logo_url && block.content.logo_url.trim()" class="flex items-center space-x-3 bg-slate-100 p-2.5 rounded-xl mb-2 border border-slate-200">
+                                                    <img :src="block.content.logo_url" class="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1 border">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-[11px] font-bold text-slate-700 truncate">Logo cargado</p>
+                                                        <button type="button" @click="block.content.logo_url = ''; blocks = [...blocks]" class="text-[10px] text-red-600 hover:underline font-semibold">
+                                                            Quitar Logo
+                                                        </button>
                                                     </div>
-                                                </template>
+                                                </div>
+
+                                                <!-- Subir archivo -->
                                                 <input type="file" @change="uploadImage($event, block, 'logo_url')" accept="image/*"
                                                     class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
-                                                <p class="text-[9px] text-slate-400 mt-1">Límite: <strong>máximo 200 KB</strong> (ajuste automático a máx. 600×200px).</p>
+                                                
+                                                <!-- O ingresar URL directa -->
+                                                <div class="mt-2">
+                                                    <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">O pegar enlace directo del logo (URL)</label>
+                                                    <input type="text" x-model="block.content.logo_url" placeholder="https://tu-sitio.cl/logo.png"
+                                                        @input="blocks = [...blocks]"
+                                                        class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                                </div>
+                                                <p class="text-[9px] text-slate-400 mt-1">Límite archivo: <strong>máx. 200 KB</strong> (PNG, JPG, SVG, WEBP).</p>
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
@@ -365,18 +375,18 @@
                             <template x-if="block.type === 'header'">
                                 <div class="text-center py-7 px-6 transition-colors"
                                     :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
-                                    <template x-if="block.content.logo_url">
-                                        <div class="flex flex-col items-center justify-center">
-                                            <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto">
-                                            <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
-                                        </div>
-                                    </template>
-                                    <template x-if="!block.content.logo_url">
-                                        <div>
-                                            <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
-                                            <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
-                                        </div>
-                                    </template>
+                                    
+                                    <!-- Si tiene Logo definido -->
+                                    <div x-show="block.content.logo_url && block.content.logo_url.trim()" class="flex flex-col items-center justify-center">
+                                        <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto block">
+                                        <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
+                                    </div>
+
+                                    <!-- Si no tiene Logo, muestra texto institucional -->
+                                    <div x-show="!block.content.logo_url || !block.content.logo_url.trim()">
+                                        <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
+                                        <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
+                                    </div>
                                 </div>
                             </template>
 
@@ -641,6 +651,8 @@
                 .then(data => {
                     if (data.status === 'success') {
                         block.content[propertyName] = data.url;
+                        // Forzar refresco reactivo de Alpine en arrays anidados
+                        this.blocks = JSON.parse(JSON.stringify(this.blocks));
                     } else {
                         alert(data.message || 'Error al subir la imagen.');
                     }

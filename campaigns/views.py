@@ -301,7 +301,7 @@ def upload_image(request):
             for chunk in image_file.chunks():
                 dest.write(chunk)
                 
-    media_url = f"{settings.MEDIA_URL}logos/{clean_filename}"
+    media_url = request.build_absolute_uri(f"{settings.MEDIA_URL}logos/{clean_filename}")
     return JsonResponse({
         'status': 'success',
         'url': media_url,
