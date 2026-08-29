@@ -34,6 +34,17 @@ DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['mailing.humm.cl', 'humm.cl', 'www.humm.cl', 'localhost', '127.0.0.1', '*'])
 
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
+    'https://mailing.humm.cl',
+    'https://humm.cl',
+    'https://www.humm.cl',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+])
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 
 
 # Application definition
