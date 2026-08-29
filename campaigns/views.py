@@ -252,12 +252,12 @@ def upload_image(request):
         
     image_file = request.FILES['image']
     
-    # 1. Validar límite de tamaño: Máximo 200 KB (200 * 1024 bytes)
-    max_size = 200 * 1024
+    # 1. Validar límite de tamaño: Máximo 500 KB (500 * 1024 bytes)
+    max_size = 500 * 1024
     if image_file.size > max_size:
         return JsonResponse({
             'status': 'error',
-            'message': f'La imagen pesa {image_file.size // 1024} KB. El tamaño máximo permitido es 200 KB.'
+            'message': f'La imagen pesa {image_file.size // 1024} KB. El tamaño máximo permitido es 500 KB.'
         }, status=400)
         
     # 2. Validar extensión permitida
@@ -279,8 +279,8 @@ def upload_image(request):
     if ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif']:
         try:
             with Image.open(image_file) as img:
-                # Dimensiones recomendadas para logos en email (máximo 600px ancho, 200px alto)
-                max_w, max_h = 600, 200
+                # Dimensiones recomendadas para logos en email (máximo 600px ancho, 250px alto)
+                max_w, max_h = 600, 250
                 if img.width > max_w or img.height > max_h:
                     img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
                 
@@ -301,7 +301,9 @@ def upload_image(request):
             for chunk in image_file.chunks():
                 dest.write(chunk)
                 
-    media_url = request.build_absolute_uri(f"{settings.MEDIA_URL}logos/{clean_filename}")
+    host = request.get_host()
+    proto = 'https' if not host.startswith('127.0.0.1') and not host.startswith('localhost') else request.scheme
+    media_url = f"{proto}://{host}{settings.MEDIA_URL}logos/{clean_filename}"
     return JsonResponse({
         'status': 'success',
         'url': media_url,

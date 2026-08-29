@@ -631,11 +631,15 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                if (file.size > 200 * 1024) {
-                    alert(`El archivo pesa ${(file.size / 1024).toFixed(0)} KB. El tamaño máximo permitido es 200 KB.`);
+                if (file.size > 500 * 1024) {
+                    alert(`El archivo pesa ${(file.size / 1024).toFixed(0)} KB. El tamaño máximo permitido es 500 KB.`);
                     event.target.value = '';
                     return;
                 }
+
+                let csrfToken = '{{ csrf_token }}';
+                const match = document.cookie.match(/csrftoken=([^;]+)/);
+                if (match) csrfToken = match[1];
 
                 const formData = new FormData();
                 formData.append('image', file);
@@ -643,23 +647,23 @@
                 fetch('{% url "campaigns:upload_image" %}', {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
+                        'X-CSRFToken': csrfToken
                     },
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
+                .then(async response => {
+                    const data = await response.json().catch(() => null);
+                    if (response.ok && data && data.status === 'success') {
                         block.content[propertyName] = data.url;
-                        // Forzar refresco reactivo de Alpine en arrays anidados
                         this.blocks = JSON.parse(JSON.stringify(this.blocks));
                     } else {
-                        alert(data.message || 'Error al subir la imagen.');
+                        const errMsg = (data && data.message) ? data.message : `Error (${response.status}): No se pudo procesar la imagen.`;
+                        alert(errMsg);
                     }
                 })
                 .catch(error => {
                     console.error('Upload error:', error);
-                    alert('Error de conexión al subir la imagen.');
+                    alert('Error de conexión o formato al subir la imagen.');
                 });
             },
 
