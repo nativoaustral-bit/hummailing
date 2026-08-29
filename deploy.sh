@@ -28,6 +28,6 @@ rsync -avz \
 
 # 3. Ejecutar tareas de producción en el servidor
 echo "⚡ Ejecutando migraciones, estáticos y permisos en servidor..."
-ssh humm.cl "cd /home1/paulocis/MAILING && source venv/bin/activate && python manage.py migrate && python manage.py collectstatic --noinput && chmod 755 passenger_wsgi.py manage.py"
+ssh humm.cl "cd /home1/paulocis/MAILING && source venv/bin/activate && python manage.py migrate && python manage.py collectstatic --noinput && chmod 755 passenger_wsgi.py manage.py && mkdir -p tmp && touch tmp/restart.txt && touch passenger_wsgi.py"
 
 echo "✅ ¡Despliegue completado con éxito! Hummailing disponible en https://mailing.humm.cl/"

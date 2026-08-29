@@ -1,13 +1,23 @@
-Options +ExecCGI +FollowSymLinks
+Options +ExecCGI +FollowSymLinks -Indexes
 AddHandler cgi-script .py .cgi
 DirectoryIndex passenger_wsgi.py
 
+# Proteger archivos sensibles del proyecto
+<FilesMatch "(\.py|\.sqlite3|\.env|\.log|\.sh|\.yml|\.json|\.lock)$">
+    Require all denied
+</FilesMatch>
+
+# Permitir exclusivamente el punto de entrada de la aplicación
+<Files "passenger_wsgi.py">
+    Require all granted
+</Files>
+
 RewriteEngine On
 
-RewriteCond %{REQUEST_URI} ^/(static|media)/ [NC,OR]
+# 1. Servir archivos estáticos y media directamente si existen en el disco
+RewriteCond %{REQUEST_URI} ^/(static|media)/ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+# 2. Redirigir todas las demás peticiones (incluyendo /contacts/, /campaigns/, /opportunities/) a Django
 RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]
