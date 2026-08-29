@@ -2,6 +2,7 @@ import json
 import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
@@ -245,24 +246,28 @@ import os
 from PIL import Image
 from django.conf import settings
 
+@csrf_exempt
 @login_required
 def upload_image(request):
-    if request.method != 'POST' or 'image' not in request.FILES:
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+        
+    if 'image' not in request.FILES:
         return JsonResponse({'status': 'error', 'message': 'No se envió ningún archivo de imagen.'}, status=400)
         
     image_file = request.FILES['image']
     
-    # 1. Validar límite de tamaño: Máximo 500 KB (500 * 1024 bytes)
-    max_size = 500 * 1024
+    # 1. Validar límite de tamaño: Hasta 10 MB (10 * 1024 * 1024 bytes)
+    max_size = 10 * 1024 * 1024
     if image_file.size > max_size:
         return JsonResponse({
             'status': 'error',
-            'message': f'La imagen pesa {image_file.size // 1024} KB. El tamaño máximo permitido es 500 KB.'
+            'message': f'La imagen pesa {(image_file.size / (1024*1024)):.1f} MB. El tamaño máximo permitido es 10 MB.'
         }, status=400)
         
     # 2. Validar extensión permitida
     ext = os.path.splitext(image_file.name)[1].lower()
-    allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif']
+    allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.bmp', '.ico']
     if ext not in allowed_extensions:
         return JsonResponse({
             'status': 'error',
@@ -270,43 +275,50 @@ def upload_image(request):
         }, status=400)
         
     # 3. Guardar y procesar dimensiones máximas
-    logos_dir = settings.MEDIA_ROOT / 'logos'
-    os.makedirs(logos_dir, exist_ok=True)
-    
-    clean_filename = f"logo_{uuid.uuid4().hex[:10]}{ext}"
-    file_path = logos_dir / clean_filename
-    
-    if ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif']:
-        try:
-            with Image.open(image_file) as img:
-                # Dimensiones recomendadas para logos en email (máximo 600px ancho, 250px alto)
-                max_w, max_h = 600, 250
-                if img.width > max_w or img.height > max_h:
-                    img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
-                
-                # Guardar optimizado
-                if ext in ['.jpg', '.jpeg']:
-                    img.convert('RGB').save(file_path, 'JPEG', quality=85, optimize=True)
-                elif ext == '.png':
-                    img.save(file_path, 'PNG', optimize=True)
-                else:
-                    img.save(file_path)
-        except Exception:
+    try:
+        logos_dir = settings.MEDIA_ROOT / 'logos'
+        os.makedirs(logos_dir, exist_ok=True)
+        
+        clean_filename = f"logo_{uuid.uuid4().hex[:10]}{ext}"
+        file_path = logos_dir / clean_filename
+        
+        if ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']:
+            try:
+                with Image.open(image_file) as img:
+                    # Dimensiones recomendadas para logos en email (máximo 800px ancho, 400px alto)
+                    max_w, max_h = 800, 400
+                    if img.width > max_w or img.height > max_h:
+                        img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
+                    
+                    # Guardar optimizado
+                    if ext in ['.jpg', '.jpeg']:
+                        img.convert('RGB').save(file_path, 'JPEG', quality=85, optimize=True)
+                    elif ext == '.png':
+                        img.save(file_path, 'PNG', optimize=True)
+                    else:
+                        img.save(file_path)
+            except Exception:
+                with open(file_path, 'wb+') as dest:
+                    for chunk in image_file.chunks():
+                        dest.write(chunk)
+        else:
+            # SVG y otros
             with open(file_path, 'wb+') as dest:
                 for chunk in image_file.chunks():
                     dest.write(chunk)
-    else:
-        # SVG
-        with open(file_path, 'wb+') as dest:
-            for chunk in image_file.chunks():
-                dest.write(chunk)
-                
-    host = request.get_host()
-    proto = 'https' if not host.startswith('127.0.0.1') and not host.startswith('localhost') else request.scheme
-    media_url = f"{proto}://{host}{settings.MEDIA_URL}logos/{clean_filename}"
-    return JsonResponse({
-        'status': 'success',
-        'url': media_url,
-        'filename': clean_filename,
-        'message': 'Imagen cargada y optimizada con éxito.'
-    })
+                    
+        host = request.get_host()
+        proto = 'https' if not host.startswith('127.0.0.1') and not host.startswith('localhost') else request.scheme
+        media_url = f"{proto}://{host}{settings.MEDIA_URL}logos/{clean_filename}"
+        
+        return JsonResponse({
+            'status': 'success',
+            'url': media_url,
+            'filename': clean_filename,
+            'message': 'Imagen cargada y optimizada con éxito.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error al guardar la imagen en el servidor: {str(e)}'
+        }, status=500)

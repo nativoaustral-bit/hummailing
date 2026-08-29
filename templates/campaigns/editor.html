@@ -254,18 +254,19 @@
                                                     <img :src="block.content.url" class="h-12 w-12 object-cover rounded-lg border bg-white">
                                                     <div class="flex-1 min-w-0">
                                                         <p class="text-[11px] font-bold text-slate-700 truncate">Imagen cargada</p>
-                                                        <button type="button" @click="block.content.url = ''" class="text-[10px] text-red-600 hover:underline font-semibold">
+                                                        <button type="button" @click="block.content.url = ''; blocks = [...blocks]" class="text-[10px] text-red-600 hover:underline font-semibold">
                                                             Quitar Imagen
                                                         </button>
                                                     </div>
                                                 </div>
                                             </template>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Máx 200 KB)</label>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Hasta 10 MB)</label>
                                                 <input type="file" @change="uploadImage($event, block, 'url')" accept="image/*"
                                                     class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
                                                 <p class="text-[9px] text-slate-400 mt-1">O ingresa una URL web:</p>
                                                 <input type="text" x-model="block.content.url" placeholder="https://ejemplo.com/imagen.jpg"
+                                                    @input="blocks = [...blocks]"
                                                     class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none mt-1">
                                             </div>
                                         </div>
@@ -318,7 +319,7 @@
                                                         @input="blocks = [...blocks]"
                                                         class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
                                                 </div>
-                                                <p class="text-[9px] text-slate-400 mt-1">Límite archivo: <strong>máx. 200 KB</strong> (PNG, JPG, SVG, WEBP).</p>
+                                                <p class="text-[9px] text-slate-400 mt-1">Límite archivo: <strong>hasta 10 MB</strong> (PNG, JPG, SVG, WEBP).</p>
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
@@ -631,8 +632,8 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                if (file.size > 500 * 1024) {
-                    alert(`El archivo pesa ${(file.size / 1024).toFixed(0)} KB. El tamaño máximo permitido es 500 KB.`);
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(`El archivo pesa ${(file.size / (1024*1024)).toFixed(1)} MB. El tamaño máximo permitido es 10 MB.`);
                     event.target.value = '';
                     return;
                 }
@@ -643,6 +644,9 @@
 
                 const formData = new FormData();
                 formData.append('image', file);
+
+                const fileInput = event.target;
+                const prevLabel = fileInput.previousElementSibling;
 
                 fetch('{% url "campaigns:upload_image" %}', {
                     method: 'POST',
@@ -660,10 +664,12 @@
                         const errMsg = (data && data.message) ? data.message : `Error (${response.status}): No se pudo procesar la imagen.`;
                         alert(errMsg);
                     }
+                    fileInput.value = '';
                 })
                 .catch(error => {
                     console.error('Upload error:', error);
-                    alert('Error de conexión o formato al subir la imagen.');
+                    alert('Error al subir la imagen. Verifica que el archivo sea una imagen válida.');
+                    fileInput.value = '';
                 });
             },
 
