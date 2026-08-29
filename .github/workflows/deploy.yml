@@ -1,0 +1,44 @@
+name: Deploy Hummailing to HostGator Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to HostGator Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Código
+        uses: actions/checkout@v4
+
+      - name: 2. Sincronizar archivos al servidor vía RSYNC
+        uses: easingthemes/ssh-deploy@v5.1.1
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          ARGS: "-avzr"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ secrets.SSH_HOST }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          REMOTE_PORT: ${{ secrets.SSH_PORT }}
+          TARGET: ${{ secrets.TARGET_DIR }}
+          EXCLUDE: "/venv/, /.git/, /__pycache__/, /*.pyc, /.DS_Store, /db.sqlite3, /media/, /*.md, /*.txt, /start.sh, /create_demo_data.py, /create_test_data.py, /deploy_hostgator.sh, /deploy.sh, /.env.example"
+
+      - name: 3. Ejecutar Migraciones y Estáticos en Servidor
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.TARGET_DIR }}
+            source venv/bin/activate
+            python manage.py migrate
+            python manage.py collectstatic --noinput
+            chmod 755 passenger_wsgi.py manage.py
+            mkdir -p tmp
+            touch tmp/restart.txt
+            touch passenger_wsgi.py
