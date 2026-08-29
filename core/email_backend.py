@@ -48,10 +48,14 @@ class ResendEmailBackend(BaseEmailBackend):
                 if not from_email or '@' not in from_email:
                     from_email = 'Hummailing <hola@humm.cl>'
                 
+                clean_subject = " ".join((message.subject or "").splitlines()).strip()
+                if not clean_subject:
+                    clean_subject = "Notificación de Hummailing"
+
                 params = {
                     "from": from_email,
                     "to": list(message.to),
-                    "subject": message.subject,
+                    "subject": clean_subject,
                 }
                 
                 if html_body:
