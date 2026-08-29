@@ -163,7 +163,7 @@ import os
 RESEND_API_KEY = env('RESEND_API_KEY', default='re_your_resend_api_key_here')
 
 # Email Configuration
-EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='core.email_backend.ResendEmailBackend')
 EMAIL_HOST = env('EMAIL_HOST', default='smtp.resend.com')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
