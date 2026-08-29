@@ -40,9 +40,10 @@ db.sqlite3-journal
 .env.local
 .env.*.local
 
-# Celery
+# Celery & Logs
 celerybeat-schedule
 celerybeat.pid
+*.log
 
 # OS & Editor files
 .DS_Store

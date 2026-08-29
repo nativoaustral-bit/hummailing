@@ -158,8 +158,18 @@ CELERY_TIMEZONE = TIME_ZONE
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Resend API
+# Resend API & Email Backend
 import os
 RESEND_API_KEY = env('RESEND_API_KEY', default='re_your_resend_api_key_here')
+
+# Email Configuration
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend' if DEBUG else 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.resend.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='resend')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default=RESEND_API_KEY)
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='Hummailing <hola@humm.cl>')
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 
