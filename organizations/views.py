@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.conf import settings
 import resend
 
@@ -298,6 +300,37 @@ def user_create(request):
             must_change_password=True
         )
         
+        # Despachar correo automático de bienvenida con credenciales
+        if user.email:
+            try:
+                email_html = render_to_string('emails/welcome_user.html', {
+                    'user': user,
+                    'temp_password': temp_password,
+                    'request': request,
+                })
+                email_text = f"""¡Te damos la bienvenida a Hummailing!
+
+Tu cuenta de acceso para {user.organization.name if user.organization else 'tu organización'} ha sido creada exitosamente.
+
+Tus credenciales de inicio:
+- Usuario: {user.username}
+- Clave Temporal: {temp_password}
+- Portal Web: https://mailing.humm.cl/accounts/login/
+
+Al ingresar por primera vez con tu clave temporal, el sistema te solicitará definir tu contraseña personal y definitiva."""
+
+                send_mail(
+                    subject="¡Bienvenido a Hummailing! — Tus credenciales de acceso",
+                    message=email_text,
+                    from_email="Hummailing <hola@humm.cl>",
+                    recipient_list=[user.email],
+                    html_message=email_html,
+                    fail_silently=False
+                )
+                logger.info(f"Correo de bienvenida enviado exitosamente a {user.email}")
+            except Exception as e:
+                logger.error(f"Error al enviar correo de bienvenida a {user.email}: {e}")
+
         ActivityLog.objects.create(
             organization=org,
             user=request.user,
@@ -325,6 +358,36 @@ def user_reset_password(request, user_id):
         target_user.must_change_password = True
         target_user.save()
         
+        # Enviar correo al usuario con su nueva clave temporal
+        if target_user.email:
+            try:
+                email_html = render_to_string('emails/reset_user_password.html', {
+                    'user': target_user,
+                    'temp_password': temp_password,
+                    'request': request,
+                })
+                email_text = f"""Hola {target_user.first_name or target_user.username},
+
+Se ha generado una nueva contraseña temporal para tu cuenta en Hummailing:
+
+- Usuario: {target_user.username}
+- Nueva Clave Temporal: {temp_password}
+- Portal Web: https://mailing.humm.cl/accounts/login/
+
+La plataforma te solicitará cambiar esta clave al iniciar sesión."""
+
+                send_mail(
+                    subject="Nueva clave temporal de acceso — Hummailing",
+                    message=email_text,
+                    from_email="Hummailing <hola@humm.cl>",
+                    recipient_list=[target_user.email],
+                    html_message=email_html,
+                    fail_silently=False
+                )
+                logger.info(f"Correo de clave temporal enviado a {target_user.email}")
+            except Exception as e:
+                logger.error(f"Error al enviar clave temporal a {target_user.email}: {e}")
+
         ActivityLog.objects.create(
             organization=target_user.organization,
             user=request.user,
