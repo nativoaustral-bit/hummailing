@@ -1,0 +1,14 @@
+# Configuración Apache para Hummailing en HostGator (mailing.humm.cl)
+RewriteEngine On
+
+# 1. Servir archivos estáticos y media directamente desde Apache
+RewriteCond %{REQUEST_URI} ^/static/
+RewriteRule ^static/(.*)$ static/$1 [L]
+
+RewriteCond %{REQUEST_URI} ^/media/
+RewriteRule ^media/(.*)$ media/$1 [L]
+
+# 2. Reverse Proxy a Gunicorn (puerto interno 8025)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:8025/$1 [P,L]
