@@ -86,6 +86,8 @@ def organization_create(request):
         email = request.POST.get('email', '').strip()
         phone = request.POST.get('phone', '').strip()
         website = request.POST.get('website', '').strip()
+        if website and not (website.startswith('http://') or website.startswith('https://')):
+            website = f'https://{website}'
         
         default_sender_name = request.POST.get('default_sender_name', '').strip() or 'Hummailing'
         default_sender_email = request.POST.get('default_sender_email', '').strip() or 'hola@humm.cl'
@@ -138,7 +140,10 @@ def organization_edit(request, org_id):
         org.rut = request.POST.get('rut', '').strip()
         org.email = request.POST.get('email', org.email).strip()
         org.phone = request.POST.get('phone', '').strip()
-        org.website = request.POST.get('website', '').strip()
+        website = request.POST.get('website', '').strip()
+        if website and not (website.startswith('http://') or website.startswith('https://')):
+            website = f'https://{website}'
+        org.website = website
         
         org.default_sender_name = request.POST.get('default_sender_name', org.default_sender_name).strip()
         org.default_sender_email = request.POST.get('default_sender_email', org.default_sender_email).strip()

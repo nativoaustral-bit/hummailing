@@ -43,7 +43,10 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sitio Web</label>
-                        <input type="url" name="website" value="{{ org.website }}" placeholder="https://cliente.cl" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <input type="text" name="website" value="{{ org.website|default:'' }}" placeholder="ej. www.cliente.cl" 
+                               onblur="if(this.value.trim() && !this.value.startsWith('http://') && !this.value.startsWith('https://')) { this.value = 'https://' + this.value.trim(); }"
+                               class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <p class="text-[10px] text-slate-400 mt-0.5">Puedes escribir directamente www.empresa.cl</p>
                     </div>
                 </div>
             </div>
