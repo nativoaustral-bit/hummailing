@@ -15,6 +15,12 @@ rsync -avz \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     --exclude='.DS_Store' \
+    --exclude='db.sqlite3' \
+    --exclude='*.sqlite3' \
+    --exclude='media' \
+    --exclude='media/' \
+    --exclude='.env' \
+    --exclude='.env.example' \
     --exclude='celery.log' \
     --exclude='*.md' \
     --exclude='*.txt' \
@@ -23,7 +29,6 @@ rsync -avz \
     --exclude='create_test_data.py' \
     --exclude='deploy_hostgator.sh' \
     --exclude='deploy.sh' \
-    --exclude='.env.example' \
     -e "ssh" ./ humm.cl:/home1/paulocis/MAILING/
 
 # 3. Ejecutar tareas de producción en el servidor
