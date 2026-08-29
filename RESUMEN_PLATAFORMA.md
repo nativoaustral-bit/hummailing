@@ -4,7 +4,15 @@
 
 ---
 
-## 🎨 1. Identidad Visual y Marca
+## 🌐 1. Enlaces y Entornos
+
+* **Producción (HostGator):** [https://mailing.humm.cl](https://mailing.humm.cl)
+* **Repositorio en GitHub:** [https://github.com/nativoaustral-bit/hummailing](https://github.com/nativoaustral-bit/hummailing)
+* **Despliegue Continuo (CI/CD):** Flujo automatizado con GitHub Actions en `.github/workflows/deploy.yml`.
+
+---
+
+## 🎨 2. Identidad Visual y Marca
 
 - **Nombre Oficial:** **Hummailing — Una herramienta de Humm**
 - **Logotipo:** Ubicado en [`static/img/logo.svg`](file:///Users/rmerinog/PLATAFORMAS/CAMPAIGNS/static/img/logo.svg) (avión de papel atravesando el isotipo de la marca).
@@ -16,7 +24,7 @@
 
 ---
 
-## 🏛️ 2. Arquitectura Multiempresa y Aislamiento de Datos
+## 🏛️ 3. Arquitectura Multiempresa y Aislamiento de Datos
 
 La plataforma está diseñada con una estricta separación de datos mediante **Organizaciones (Espacios de Trabajo Privados)**:
 
@@ -24,7 +32,7 @@ La plataforma está diseñada con una estricta separación de datos mediante **O
                   ┌───────────────────────────────────────────────────────────┐
                   │                 Panel Master Admin Humm                   │
                   │  - Creación de Organizaciones y Asignación de Límites     │
-                  │  - Creación de Usuarios con Clave Temporal                │
+                  │  - Creación de Usuarios con Clave Temporal No Ambigua     │
                   │  - Modo Soporte (Impersonación Segura con Banner Activo)  │
                   └─────────────────────────────┬─────────────────────────────┘
                                                 │
@@ -45,31 +53,31 @@ La plataforma está diseñada con una estricta separación de datos mediante **O
 
 ---
 
-## 👑 3. Panel Master Humm: Administración Exclusiva de Clientes
+## 👑 4. Panel Master Humm: Administración Exclusiva de Clientes
 
 El panel del **Administrador Master Humm** está 100% enfocado en la gestión de clientes y servicios:
 
 ### Módulos del Administrador Master:
 * **🏢 Gestión de Organizaciones:** Creación de nuevas empresas clientes, configuración de razones sociales, RUT, datos de contacto, límites máximos de contactos, límites mensuales de envíos, switch interactivo de activación/suspensión y botón de eliminación permanente.
-* **👥 Gestión de Usuarios y Accesos:** Creación de usuarios asignados a clientes con contraseñas temporales autogeneradas seguras, switch de activación/desactivación de cuentas, reseteo administrativo de claves y eliminación de usuarios.
+* **👥 Gestión de Usuarios y Accesos:** Creación de usuarios con contraseñas temporales autogeneradas seguras (sin caracteres ambiguos como `0`/`O` o `1`/`l`/`I`), URLs de acceso dinámicas (`https://mailing.humm.cl`), switch de activación/desactivación de cuentas, reseteo administrativo de claves y eliminación de usuarios.
 * **📢 Comunicados Masivos a Clientes:** Módulo especial para que Humm redacte y envíe avisos oficiales o notificaciones de servicio por correo a todas las empresas clientes activas.
 * **📜 Auditoría y Registro de Actividad:** Historial de inicios de sesión, cambios de límites, creación de cuentas y acciones de seguridad.
-* **🛠️ Modo Soporte a Clientes (Impersonación):** Si Humm necesita revisar o configurar las campañas de un cliente específico, el administrador puede presionar **"Soporte ↗"** en la ficha del cliente para ingresar a su espacio de trabajo y salir con un solo clic. Si Humm desea enviar sus propias campañas, lo hace a través de su propia organización ("Humm Ecosistema").
+* **🛠️ Modo Soporte a Clientes (Impersonación):** El administrador puede presionar **"Soporte ↗"** en la ficha del cliente para ingresar a su espacio de trabajo y salir con un solo clic.
 
 ---
 
-## ✉️ 4. Motor de Campañas y Editor Visual
+## ✉️ 5. Motor de Campañas y Diseñador Visual
 
 * **Configuración Previa de Paleta y Estilo:** Antes de agregar bloques, el usuario define la identidad cromática global de la campaña (Color de Encabezado, Color de Botones y Fondo del Correo).
-* **Sugerencia Automática de Armonía de Color:** Al elegir o escribir un color para el encabezado, el sistema propone automáticamente los colores armónicos y de alto contraste para botones, textos y enlaces, además de ofrecer combinaciones oficiales en 1 clic (Humm Navy, Humm Naranja, Cyan, Esmeralda, Slate y Blanco Minimalista).
-* **Editor por Bloques:** Construcción visual arrastrable y ordenable (Encabezado con Logo, Títulos, Textos, Imágenes, Botones CTA y Pie de página con desuscripción), donde el encabezado y botones heredan automáticamente el estilo global de la campaña.
+* **Sugerencia Automática de Armonía de Color:** Al elegir un color para el encabezado, el sistema propone automáticamente los colores armónicos y de alto contraste para botones, textos y enlaces, además de ofrecer 6 combinaciones oficiales en 1 clic (Humm Navy, Humm Naranja, Cyan, Esmeralda, Slate y Blanco Minimalista).
+* **Subida y Optimización de Logos (Máx 200 KB):** Carga directa de imágenes corporativas con validación estricta de peso (máximo 200 KB) y redimensionamiento automático de alta calidad (LANCZOS máx 600×200 px).
+* **Editor de Bloques y Previsualización Amplia:** Canvas centrado de 600px con scroll fluido independiente para revisar encabezado, cuerpo y pie de página cómodamente.
 * **Personalización Dinámica:** Reemplazo en tiempo real de etiquetas como `{{ first_name }}` y `{{ company }}`.
-* **Pruebas y Programación:** Enlace directo para enviar un correo de prueba a un email específico antes del despacho general, o programar el envío para una fecha/hora futura.
-* **Infraestructura Asíncrona:** Celery 5.x + Broker Redis + API de Resend para despachos masivos sin congelar el servidor web.
+* **Pruebas y Programación:** Botón **"Enviar Campaña"** con opciones para despacho masivo inmediato, programación por fecha/hora o envío de prueba instantáneo a un correo específico.
 
 ---
 
-## 🎯 5. Captación de Leads y Oportunidades Comerciales
+## 🎯 6. Captación de Leads y Oportunidades Comerciales
 
 * **Conversión por Clic:** Los botones de correo configurados como tipo **"Conversión"** generan automáticamente un **Lead / Oportunidad Comercial** cuando el destinatario hace clic en el enlace.
 * **Gestión de Leads:** Módulo con filtros de estado (*Nueva, Por contactar, Contactado, En conversación, Propuesta enviada, Ganada, Perdida*), asignación de ejecutivos responsables, prioridad y bitácora de notas.
@@ -77,50 +85,61 @@ El panel del **Administrador Master Humm** está 100% enfocado en la gestión de
 
 ---
 
-## 📂 6. Estructura de Aplicaciones y Módulos
+## 📂 7. Estructura del Proyecto
 
 ```
 CAMPAIGNS/
-├── config/                  # Ajustes globales, middleware de aislamiento y Celery
-├── organizations/           # Módulo multiempresa, administración Humm y auditoría
-├── core/                    # Modelo User personalizado, dashboard y cambio de contraseña
-├── contacts/                # Gestión de contactos, etiquetas, segmentos e importador CSV/Excel
-├── campaigns/               # Editor visual, enlaces con tracking y tareas asíncronas
-├── opportunities/           # Módulo de Leads generados por clics de conversión
-├── static/img/logo.svg      # Logotipo oficial de Hummailing
-├── templates/               # Plantillas responsivas con Tailwind y Alpine.js
-├── start.sh                 # Script de arranque en un solo paso
-├── INSTRUCCIONES_ARRANQUE.txt# Manual de uso y credenciales
-└── RESUMEN_PLATAFORMA.md    # Este documento
+├── .github/workflows/deploy.yml # Pipeline de despliegue automático a HostGator
+├── config/                      # Ajustes globales, middleware de aislamiento y Celery
+├── organizations/               # Módulo multiempresa, administración Humm y auditoría
+├── core/                        # Modelo User personalizado, dashboard y contraseñas
+├── contacts/                    # Contactos, etiquetas, segmentos e importador CSV/Excel
+├── campaigns/                   # Editor visual, optimizador de imágenes y despachos
+├── opportunities/               # Leads generados por clics de conversión
+├── static/img/logo.svg          # Logotipo oficial de Hummailing
+├── templates/                   # Plantillas responsivas con Tailwind y Alpine.js
+├── deploy.sh                    # Script local de sincronización a producción
+├── start.sh                     # Script de arranque en desarrollo local
+└── RESUMEN_PLATAFORMA.md        # Documentación de la plataforma
 ```
 
 ---
 
-## ⚡ 7. Puesta en Marcha y Accesos Rápidos
+## 🔄 8. Despliegue y Actualizaciones
 
-### Iniciar la plataforma:
-Desde la terminal en la raíz del proyecto:
+### Flujo Automático vía GitHub (Recomendado):
+Cada vez que se suben cambios a GitHub, **GitHub Actions** actualiza el servidor de HostGator automáticamente:
 ```bash
-./start.sh
+git add .
+git commit -m "Descripción de las mejoras"
+git push origin main
 ```
-Abre en el navegador: [http://localhost:8000](http://localhost:8000)
 
-### Cuentas de Acceso Configuradas:
-1. **👑 Administrador Master Humm:**
-   - **Usuario:** `admin` | **Contraseña:** `admin`
-   - **Panel de Control Master:** [http://localhost:8000/humm-admin/](http://localhost:8000/humm-admin/)
-2. **🏢 Cliente 1 (Acme Soluciones Digitales):**
-   - **Usuario:** `acme.admin` | **Contraseña:** `acme1234`
-3. **🌿 Cliente 2 (BioNativa Cosmética):**
-   - **Usuario:** `bionativa.admin` | **Contraseña:** `bionativa1234`
+### Despliegue Manual desde Mac (Alternativo):
+```bash
+./deploy.sh
+```
 
 ---
 
-## 🧪 8. Pruebas Automatizadas
+## ⚡ 9. Cuentas de Acceso
+
+* **👑 Administrador Master Humm:**
+  - **Usuario:** `admin`
+  - **Acceso:** [https://mailing.humm.cl/accounts/login/](https://mailing.humm.cl/accounts/login/)
+  - **Panel de Control Master:** [https://mailing.humm.cl/humm-admin/](https://mailing.humm.cl/humm-admin/)
+* **🏢 Clientes de Prueba Creados:**
+  - **Acme Soluciones Digitales:** `acme.admin`
+  - **BioNativa Cosmética:** `bionativa.admin`
+  - **The Seed:** `benja`
+
+---
+
+## 🧪 10. Pruebas Automatizadas
 
 Para validar la integridad del sistema y el aislamiento multiempresa:
 ```bash
 source venv/bin/activate
 python manage.py test
 ```
-*Suite de 7 pruebas unitarias aprobadas al 100% que validan aislamiento de datos, cambio forzado de clave, generación de oportunidades por clic y permisos administrativos.*
+*Suite de pruebas unitarias aprobadas que validan aislamiento de datos, cambio forzado de clave, generación de oportunidades por clic y permisos administrativos.*
