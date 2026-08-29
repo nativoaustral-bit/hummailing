@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio | Hummailing{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Encabezado de Bienvenida -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Panel de Control</h1>
+            <p class="text-xs text-slate-500 mt-0.5">
+                Resumen de actividad y rendimiento para <strong>{{ current_organization.trade_name|default:current_organization.name }}</strong>
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'contacts:import' %}" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors">
+                📥 Importar Contactos
+            </a>
+            <a href="{% url 'campaigns:create' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                <span>➕</span>
+                <span>Nueva Campaña</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Métricas Rápidas -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-brand-blue/30 transition-all">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider">Contactos Activos</span>
+                <span class="p-2 bg-blue-50 text-brand-blue rounded-xl text-lg">👥</span>
+            </div>
+            <p class="text-3xl font-black text-slate-900">{{ active_contacts }}</p>
+            <p class="text-xs text-slate-400 mt-1">de {{ total_contacts }} registrados</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-brand-blue/30 transition-all">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider">Campañas Creadas</span>
+                <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl text-lg">✉️</span>
+            </div>
+            <p class="text-3xl font-black text-slate-900">{{ total_campaigns }}</p>
+            <p class="text-xs text-slate-400 mt-1">Envíos totales</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-brand-blue/30 transition-all">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider">Oportunidades</span>
+                <span class="p-2 bg-amber-50 text-brand-orange rounded-xl text-lg">🎯</span>
+            </div>
+            <p class="text-3xl font-black text-brand-orange">{{ total_opportunities }}</p>
+            <p class="text-xs text-slate-400 mt-1">{{ new_opportunities }} nuevas por contactar</p>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-brand-blue/30 transition-all">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider">Clics Únicos</span>
+                <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl text-lg">🔗</span>
+            </div>
+            <p class="text-3xl font-black text-slate-900">{{ total_clicks }}</p>
+            <p class="text-xs text-slate-400 mt-1">Interacción con enlaces</p>
+        </div>
+    </div>
+
+    <!-- Embudo de Conversión -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-base font-bold text-brand-navy mb-4 flex items-center space-x-2">
+            <span>📊</span>
+            <span>Embudo de Conversión y Rendimiento de Envíos</span>
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <p class="text-xs font-bold text-slate-400 uppercase">Entregados</p>
+                <p class="text-2xl font-black text-slate-800 mt-1">{{ total_delivered }}</p>
+            </div>
+            <div class="p-4 rounded-xl bg-blue-50/60 border border-blue-100">
+                <p class="text-xs font-bold text-brand-blue uppercase">Aperturas</p>
+                <p class="text-2xl font-black text-brand-blue mt-1">{{ total_opens }}</p>
+            </div>
+            <div class="p-4 rounded-xl bg-cyan-50/60 border border-cyan-100">
+                <p class="text-xs font-bold text-cyan-800 uppercase">Clics</p>
+                <p class="text-2xl font-black text-cyan-700 mt-1">{{ total_clicks }}</p>
+            </div>
+            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                <p class="text-xs font-bold text-amber-800 uppercase">Oportunidades</p>
+                <p class="text-2xl font-black text-brand-orange mt-1">{{ total_opportunities }}</p>
+            </div>
+            <div class="p-4 rounded-xl bg-red-50/60 border border-red-100">
+                <p class="text-xs font-bold text-red-600 uppercase">Bajas / Rebotes</p>
+                <p class="text-2xl font-black text-red-600 mt-1">{{ total_bounces|add:total_unsubs }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Inferior: Campañas Recientes & Programadas -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Campañas Recientes -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-brand-navy">Campañas Recientes</h3>
+                <a href="{% url 'campaigns:list' %}" class="text-xs font-bold text-brand-blue hover:underline">Ver todas →</a>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for campaign in recent_campaigns %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <a href="{% url 'campaigns:editor' campaign.id %}" class="text-sm font-bold text-slate-800 hover:text-brand-blue">{{ campaign.name }}</a>
+                        <p class="text-xs text-slate-400">{{ campaign.created_at|date:"d M Y, H:i" }}</p>
+                    </div>
+                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full {% if campaign.status == 'sent' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif campaign.status == 'sending' %}bg-blue-50 text-brand-blue border border-blue-200 animate-pulse{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                        {{ campaign.get_status_display }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-400 py-4 text-center">No hay campañas creadas aún.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Próximos Envíos Programados -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-brand-navy">Próximos Envíos Programados</h3>
+                <span class="text-xs text-slate-400">Automatización</span>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for sc in scheduled_campaigns %}
+                <div class="py-3 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">{{ sc.name }}</p>
+                        <p class="text-xs text-brand-orange font-semibold">📅 Programada para: {{ sc.scheduled_at|date:"d M Y, H:i" }}</p>
+                    </div>
+                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                        Programada
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-400 py-4 text-center">No hay envíos programados para los próximos días.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

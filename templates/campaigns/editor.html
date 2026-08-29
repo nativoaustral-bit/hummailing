@@ -1,0 +1,756 @@
+{% extends 'base.html' %}
+
+{% block title %}Editor Visual: {{ campaign.name }} | Hummailing{% endblock %}
+
+{% block content %}
+<style>
+    /* Scrollbars elegantes y funcionales */
+    .editor-sidebar::-webkit-scrollbar,
+    .editor-preview-viewport::-webkit-scrollbar {
+        width: 8px;
+        display: block !important;
+    }
+    .editor-sidebar::-webkit-scrollbar-track,
+    .editor-preview-viewport::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+    }
+    .editor-sidebar::-webkit-scrollbar-thumb,
+    .editor-preview-viewport::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 8px;
+    }
+    .editor-sidebar::-webkit-scrollbar-thumb:hover,
+    .editor-preview-viewport::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+</style>
+
+<div x-data="editorData()" class="space-y-4 max-w-full">
+    <!-- Barra Superior de Acciones -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'campaigns:list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+                ← Volver a Campañas
+            </a>
+            <div>
+                <h1 class="text-base font-black text-brand-navy leading-tight">{{ campaign.name }}</h1>
+                <p class="text-xs text-slate-400">Asunto: <strong class="text-slate-700">{{ campaign.subject }}</strong></p>
+            </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <button @click="saveCampaign"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm flex items-center space-x-1.5">
+                <span>💾</span>
+                <span>Guardar Cambios</span>
+            </button>
+            <button @click="showTestModal = true"
+                class="bg-blue-50 hover:bg-blue-100 text-brand-blue border border-blue-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center space-x-1.5">
+                <span>✉️</span>
+                <span>Enviar Prueba</span>
+            </button>
+            <button @click="showSendModal = true"
+                class="bg-brand-blue hover:bg-brand-navy text-white px-5 py-2 rounded-xl text-xs font-bold shadow-md transition-colors flex items-center space-x-1.5">
+                <span>🚀</span>
+                <span>Enviar Campaña</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal: Sidebar Izquierda + Canvas Amplio Derecho -->
+    <div class="flex flex-col lg:flex-row gap-5 items-start">
+        
+        <!-- Panel Izquierdo: Configuración de Colores + Bloques -->
+        <div class="w-full lg:w-[350px] xl:w-[370px] flex-shrink-0 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col h-[82vh]">
+            
+            <div class="flex-1 overflow-y-auto editor-sidebar space-y-4 pr-1 pb-4">
+                
+                <!-- 1. SECCIÓN PRINCIPAL: Paleta de Colores de la Campaña -->
+                <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-sm">🎨</span>
+                            <span class="text-xs font-black text-brand-navy uppercase tracking-wider">Paleta de Colores</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-brand-blue bg-blue-50 px-2 py-0.5 rounded-full">Global</span>
+                    </div>
+
+                    <!-- Paletas Rápidas Armoniosas -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Combinaciones Sugeridas</label>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <button type="button" @click="applyPreset('#173960', '#0C6FAC', '#ffffff')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#173960' && theme.button_bg === '#0C6FAC' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #173960;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #0C6FAC;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Humm Navy</span>
+                            </button>
+
+                            <button type="button" @click="applyPreset('#173960', '#F59A29', '#ffffff')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#173960' && theme.button_bg === '#F59A29' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #173960;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #F59A29;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Humm Naranja</span>
+                            </button>
+
+                            <button type="button" @click="applyPreset('#0C6FAC', '#173960', '#ffffff')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#0C6FAC' && theme.button_bg === '#173960' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #0C6FAC;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #173960;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Cyan & Navy</span>
+                            </button>
+
+                            <button type="button" @click="applyPreset('#064e3b', '#10b981', '#ffffff')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#064e3b' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #064e3b;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #10b981;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Esmeralda</span>
+                            </button>
+
+                            <button type="button" @click="applyPreset('#0f172a', '#334155', '#ffffff')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#0f172a' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #0f172a;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #334155;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Dark Slate</span>
+                            </button>
+
+                            <button type="button" @click="applyPreset('#ffffff', '#173960', '#f8fafc')"
+                                class="p-1.5 rounded-lg border text-left transition-all hover:ring-2 hover:ring-brand-blue"
+                                :class="theme.header_bg === '#ffffff' ? 'ring-2 ring-brand-blue border-brand-blue bg-white' : 'border-slate-200 bg-white/70'">
+                                <div class="flex gap-1 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full border border-slate-300" style="background-color: #ffffff;"></span>
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: #173960;"></span>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-700 block leading-tight">Limpio Blanco</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Controles Detallados de Color -->
+                    <div class="grid grid-cols-2 gap-2.5 pt-1">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Color Header</label>
+                            <div class="flex items-center space-x-1.5 bg-white p-1 rounded-lg border border-slate-300">
+                                <input type="color" x-model="theme.header_bg" @input="onHeaderColorChange($event.target.value)"
+                                    class="w-6 h-6 rounded border-0 cursor-pointer p-0 bg-transparent">
+                                <input type="text" x-model="theme.header_bg" @input="onHeaderColorChange($event.target.value)"
+                                    class="w-full text-[11px] font-mono font-bold text-slate-800 uppercase focus:outline-none">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Color Botones</label>
+                            <div class="flex items-center space-x-1.5 bg-white p-1 rounded-lg border border-slate-300">
+                                <input type="color" x-model="theme.button_bg"
+                                    class="w-6 h-6 rounded border-0 cursor-pointer p-0 bg-transparent">
+                                <input type="text" x-model="theme.button_bg"
+                                    class="w-full text-[11px] font-mono font-bold text-slate-800 uppercase focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Fondo del Correo</label>
+                        <div class="flex gap-2">
+                            <button type="button" @click="theme.canvas_bg = '#ffffff'"
+                                class="flex-1 py-1 px-2 rounded border text-[10px] font-bold transition-all"
+                                :class="theme.canvas_bg === '#ffffff' ? 'bg-white border-brand-blue text-brand-navy shadow-sm' : 'bg-slate-100 text-slate-600 border-slate-200'">
+                                Blanco (#FFF)
+                            </button>
+                            <button type="button" @click="theme.canvas_bg = '#f8fafc'"
+                                class="flex-1 py-1 px-2 rounded border text-[10px] font-bold transition-all"
+                                :class="theme.canvas_bg === '#f8fafc' ? 'bg-white border-brand-blue text-brand-navy shadow-sm' : 'bg-slate-100 text-slate-600 border-slate-200'">
+                                Gris Claro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. AÑADIR BLOQUES -->
+                <div>
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                        <span class="text-xs font-black text-brand-navy uppercase tracking-wider">Añadir Bloques</span>
+                        <span class="text-[10px] text-slate-400">Haz clic para agregar</span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button @click="addBlock('header')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            🏷️ Header
+                        </button>
+                        <button @click="addBlock('title')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            🔤 Título
+                        </button>
+                        <button @click="addBlock('text')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            📝 Texto
+                        </button>
+                        <button @click="addBlock('image')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            🖼️ Imagen
+                        </button>
+                        <button @click="addBlock('cta')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            🔘 Botón
+                        </button>
+                        <button @click="addBlock('footer')"
+                            class="bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-brand-blue p-2 rounded-xl transition-all text-xs font-semibold text-slate-700 text-center">
+                            📄 Footer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. ESTRUCTURA Y EDICIÓN DE BLOQUES -->
+                <div>
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                        <span class="text-xs font-black text-brand-navy uppercase tracking-wider">Estructura del Correo</span>
+                        <span class="text-[10px] text-slate-400" x-text="blocks.length + ' bloques'"></span>
+                    </div>
+                    
+                    <div class="space-y-2.5">
+                        <template x-for="(block, index) in blocks" :key="index">
+                            <div class="bg-slate-50 p-3 rounded-xl border flex flex-col gap-2 transition-all shadow-sm"
+                                :class="activeIndex === index ? 'border-brand-blue ring-2 ring-brand-blue/20 bg-white' : 'border-slate-200'">
+                                <div class="flex justify-between items-center cursor-pointer" @click="activeIndex = index">
+                                    <span class="font-bold capitalize text-xs text-slate-800" x-text="block.type"></span>
+                                    <div class="flex space-x-1 text-xs">
+                                        <button @click.stop="moveUp(index)" x-show="index > 0"
+                                            class="text-slate-400 hover:text-slate-800 bg-slate-200/60 p-1 rounded">↑</button>
+                                        <button @click.stop="moveDown(index)" x-show="index < blocks.length - 1"
+                                            class="text-slate-400 hover:text-slate-800 bg-slate-200/60 p-1 rounded">↓</button>
+                                        <button @click.stop="removeBlock(index)"
+                                            class="text-red-500 hover:text-red-700 p-1">✕</button>
+                                    </div>
+                                </div>
+
+                                <!-- Editor de propiedades por bloque -->
+                                <div x-show="activeIndex === index" class="mt-2 space-y-2 pt-2 border-t border-slate-200">
+                                    <template x-if="block.type === 'title' || block.type === 'text'">
+                                        <textarea x-model="block.content.text"
+                                            class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none"
+                                            rows="3" placeholder="Escribe el contenido aquí..."></textarea>
+                                    </template>
+                                    <template x-if="block.type === 'image'">
+                                        <div class="space-y-2 text-xs">
+                                            <template x-if="block.content.url">
+                                                <div class="flex items-center space-x-3 bg-slate-100 p-2 rounded-xl border border-slate-200">
+                                                    <img :src="block.content.url" class="h-12 w-12 object-cover rounded-lg border bg-white">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-[11px] font-bold text-slate-700 truncate">Imagen cargada</p>
+                                                        <button type="button" @click="block.content.url = ''" class="text-[10px] text-red-600 hover:underline font-semibold">
+                                                            Quitar Imagen
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Máx 200 KB)</label>
+                                                <input type="file" @change="uploadImage($event, block, 'url')" accept="image/*"
+                                                    class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
+                                                <p class="text-[9px] text-slate-400 mt-1">O ingresa una URL web:</p>
+                                                <input type="text" x-model="block.content.url" placeholder="https://ejemplo.com/imagen.jpg"
+                                                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none mt-1">
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="block.type === 'cta'">
+                                        <div class="space-y-2 text-xs">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Texto del Botón</label>
+                                                <input type="text" x-model="block.content.text" placeholder="ME INTERESA"
+                                                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase">URL Destino</label>
+                                                <input type="text" x-model="block.content.url" placeholder="https://tu-landing.cl#contacto"
+                                                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Tipo de Enlace</label>
+                                                <select x-model="block.content.link_type" class="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                                    <option value="conversion">Conversión (Genera Lead en Oportunidades)</option>
+                                                    <option value="info">Informativo</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="block.type === 'header'">
+                                        <div class="space-y-3 text-xs">
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Logo de la Empresa</label>
+                                                <template x-if="block.content.logo_url">
+                                                    <div class="flex items-center space-x-3 bg-slate-100 p-2.5 rounded-xl mb-2 border border-slate-200">
+                                                        <img :src="block.content.logo_url" class="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1 border">
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="text-[11px] font-bold text-slate-700 truncate">Logo cargado</p>
+                                                            <button type="button" @click="block.content.logo_url = ''" class="text-[10px] text-red-600 hover:underline font-semibold">
+                                                                Quitar Logo
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                                <input type="file" @change="uploadImage($event, block, 'logo_url')" accept="image/*"
+                                                    class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
+                                                <p class="text-[9px] text-slate-400 mt-1">Límite: <strong>máximo 200 KB</strong> (ajuste automático a máx. 600×200px).</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
+                                                <input type="text" x-model="block.content.company_name" placeholder="Nombre"
+                                                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Subtítulo / Eslogan (Opcional)</label>
+                                                <input type="text" x-model="block.content.subtitle" placeholder="ej. Soluciones para tu negocio"
+                                                    class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="block.type === 'footer'">
+                                        <span class="text-[11px] text-slate-400">Pie legal institucional con desuscripción automática.</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <div x-show="blocks.length === 0"
+                            class="text-center p-6 text-slate-400 text-xs border-2 border-dashed border-slate-200 rounded-xl">
+                            No hay bloques. Añade tu primer bloque arriba.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Previsualización en Vivo Amplia -->
+        <div class="flex-1 w-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[82vh]">
+            <div class="bg-slate-100 p-3.5 border-b border-slate-200 flex justify-between items-center text-xs text-slate-600 font-medium px-6 flex-shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="font-bold text-brand-navy">Previsualización del Correo</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-slate-400 text-[11px]">Header: <strong :style="'color:' + theme.header_bg" x-text="theme.header_bg"></strong> | Botón: <strong :style="'color:' + theme.button_bg" x-text="theme.button_bg"></strong></span>
+                    <span class="bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 uppercase">Desktop / Mobile</span>
+                </div>
+            </div>
+            
+            <!-- Vista con Scroll Vertical Continuo -->
+            <div class="flex-1 overflow-y-auto editor-preview-viewport bg-slate-100/90 p-4 sm:p-8 flex justify-center items-start">
+                
+                <!-- Lienzo del correo (600px) -->
+                <div class="w-full max-w-[600px] border border-slate-300 rounded-2xl shadow-lg font-sans overflow-hidden my-4 mb-28 transition-colors"
+                    :style="'background-color: ' + theme.canvas_bg + '; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif;'">
+                    <template x-for="(block, index) in blocks" :key="index">
+                        <div class="relative group cursor-pointer border-2 border-transparent hover:border-brand-blue/60 transition-colors"
+                            @click="activeIndex = index">
+
+                            <!-- HEADER: Usa el color global del tema -->
+                            <template x-if="block.type === 'header'">
+                                <div class="text-center py-7 px-6 transition-colors"
+                                    :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
+                                    <template x-if="block.content.logo_url">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto">
+                                            <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
+                                        </div>
+                                    </template>
+                                    <template x-if="!block.content.logo_url">
+                                        <div>
+                                            <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
+                                            <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template x-if="block.type === 'title'">
+                                <div class="px-8 pt-8 pb-3">
+                                    <h2 class="text-2xl font-black leading-tight" :style="'color: ' + (isDarkColor(theme.header_bg) ? theme.header_bg : '#1e293b')" x-text="block.content.text"></h2>
+                                </div>
+                            </template>
+
+                            <template x-if="block.type === 'text'">
+                                <div class="px-8 py-3">
+                                    <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line" x-text="block.content.text"></div>
+                                </div>
+                            </template>
+
+                            <template x-if="block.type === 'image'">
+                                <div class="w-full px-8 py-4 flex justify-center">
+                                    <div class="w-full bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
+                                        <template x-if="block.content.url">
+                                            <img :src="block.content.url" class="w-full h-auto rounded-xl shadow-sm">
+                                        </template>
+                                        <template x-if="!block.content.url">
+                                            <div class="h-44 flex items-center justify-center w-full">
+                                                <span class="text-slate-400 text-xs">Sin Imagen (Sube una imagen arriba)</span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- BOTÓN CTA: Usa el color global de botones -->
+                            <template x-if="block.type === 'cta'">
+                                <div class="text-center py-7 px-8">
+                                    <a :href="block.content.url || '#'"
+                                        class="inline-block font-bold py-3.5 px-8 rounded-xl text-xs uppercase tracking-widest no-underline shadow-md transition-transform hover:scale-105"
+                                        :style="'background-color: ' + theme.button_bg + '; color: ' + (theme.button_text || '#ffffff')"
+                                        x-text="block.content.text || 'Botón'"></a>
+                                </div>
+                            </template>
+
+                            <template x-if="block.type === 'footer'">
+                                <div class="mt-8 p-8 bg-slate-50/80 border-t border-slate-200 text-center text-xs text-slate-500">
+                                    <p>© 2026 {{ current_organization.trade_name|default:"Humm" }} — Vía Hummailing. Recibes este correo porque estás suscrito a nuestras novedades.</p>
+                                    <p class="mt-2.5"><a href="#" class="underline font-semibold" :style="'color: ' + theme.button_bg">Cancelar suscripción</a></p>
+                                </div>
+                            </template>
+
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Enviar / Programar -->
+    <div x-show="showSendModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        style="display: none;">
+        <div @click.away="if(sendingState === 'idle') showSendModal = false"
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            <h3 class="text-xl font-bold text-brand-navy mb-1">Enviar Campaña</h3>
+            <p class="text-slate-500 text-xs mb-6">Puedes enviar la campaña inmediatamente a todos los destinatarios o programarla para una fecha y hora específica.</p>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Programar Envío (Opcional)</label>
+                    <div class="flex gap-2">
+                        <input type="date" x-model="scheduledDate"
+                            class="flex-1 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <input type="time" x-model="scheduledTime"
+                            class="w-32 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Si dejas esto en blanco, se enviará de inmediato.</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button @click="showSendModal = false" :disabled="sendingState !== 'idle'"
+                    class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                <button @click="sendCampaign" :disabled="sendingState !== 'idle'"
+                    class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-2">
+                    <span x-show="sendingState === 'idle'" x-text="scheduledDate ? 'Programar Envío' : 'Enviar Ahora'"></span>
+                    <span x-show="sendingState === 'sending'">Enviando...</span>
+                    <span x-show="sendingState === 'done'">¡Enviado!</span>
+                    <span x-show="sendingState === 'error'">Error</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Envío de Prueba Individual -->
+    <div x-show="showTestModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        style="display: none;">
+        <div @click.away="if(!testSending) showTestModal = false"
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            <h3 class="text-xl font-bold text-brand-navy mb-1">Enviar Correo de Prueba</h3>
+            <p class="text-slate-500 text-xs mb-4">Ingresa tu correo para recibir una vista previa idéntica a como la verán tus contactos.</p>
+
+            <div class="space-y-3 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Correo de Destino *</label>
+                    <input type="email" x-model="testEmail" placeholder="tu-correo@humm.cl"
+                        class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button @click="showTestModal = false" :disabled="testSending"
+                    class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                <button @click="sendTestEmail" :disabled="testSending || !testEmail"
+                    class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors">
+                    <span x-show="!testSending">Enviar Prueba</span>
+                    <span x-show="testSending">Enviando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function editorData() {
+        return {
+            theme: {{ theme_json|default:"{ 'header_bg': '#173960', 'button_bg': '#0C6FAC', 'button_text': '#ffffff', 'canvas_bg': '#ffffff' }" }},
+            blocks: {{ blocks_json }},
+            activeIndex: null,
+            showSendModal: false,
+            showTestModal: false,
+            testEmail: '{{ user.email }}',
+            testSending: false,
+            scheduledDate: '',
+            scheduledTime: '',
+            sendingState: 'idle',
+
+            // Aplicar Preset Armonioso
+            applyPreset(headerBg, buttonBg, canvasBg = '#ffffff') {
+                this.theme.header_bg = headerBg;
+                this.theme.button_bg = buttonBg;
+                this.theme.button_text = '#ffffff';
+                this.theme.canvas_bg = canvasBg;
+            },
+
+            // Sugerencia armónica automática cuando el usuario elige un color de header
+            onHeaderColorChange(hex) {
+                if (!hex) return;
+                hex = hex.toLowerCase();
+                
+                // Si es claro (blanco / gris claro / crema)
+                if (['#ffffff', '#f8fafc', '#f1f5f9', '#ffffff', '#e2e8f0'].includes(hex) || this.isColorLight(hex)) {
+                    this.theme.button_bg = '#173960';
+                    this.theme.button_text = '#ffffff';
+                    if (this.theme.canvas_bg === '#ffffff' && hex === '#ffffff') {
+                        this.theme.canvas_bg = '#f8fafc';
+                    }
+                } 
+                // Si es un tono azul o navy
+                else if (hex.startsWith('#17') || hex.startsWith('#0f') || hex.startsWith('#1e') || hex.startsWith('#0c')) {
+                    if (hex === '#173960' || hex === '#0f243e') {
+                        this.theme.button_bg = '#0C6FAC';
+                    } else {
+                        this.theme.button_bg = '#173960';
+                    }
+                    this.theme.button_text = '#ffffff';
+                } 
+                // Si es verde / esmeralda
+                else if (hex.startsWith('#06') || hex.startsWith('#04') || hex.startsWith('#10')) {
+                    this.theme.button_bg = '#10B981';
+                    this.theme.button_text = '#ffffff';
+                }
+                // Si es violeta / púrpura
+                else if (hex.startsWith('#4c') || hex.startsWith('#58') || hex.startsWith('#6d')) {
+                    this.theme.button_bg = '#8B5CF6';
+                    this.theme.button_text = '#ffffff';
+                }
+                // Cualquier otro color oscuro
+                else {
+                    this.theme.button_text = '#ffffff';
+                }
+            },
+
+            isColorLight(hex) {
+                if (!hex || hex.length < 6) return false;
+                const c = hex.replace('#', '');
+                const r = parseInt(c.substr(0, 2), 16) || 0;
+                const g = parseInt(c.substr(2, 2), 16) || 0;
+                const b = parseInt(c.substr(4, 2), 16) || 0;
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                return brightness > 180;
+            },
+
+            isDarkColor(hex) {
+                return !this.isColorLight(hex);
+            },
+
+            getHeaderTextColor() {
+                return this.isColorLight(this.theme.header_bg) ? '#1e293b' : '#ffffff';
+            },
+
+            getHeaderSubtitleColor() {
+                return this.isColorLight(this.theme.header_bg) ? '#64748b' : '#99c5d7';
+            },
+
+            addBlock(type) {
+                let content = {};
+                if (type === 'header') content = { logo_url: '', company_name: '{{ current_organization.trade_name|default:current_organization.name }}', subtitle: 'Comunicación Oficial' };
+                if (type === 'title') content = { text: 'Nuevo título principal' };
+                if (type === 'text') content = { text: 'Hola {{ first_name }},\n\nEscribe tu texto aquí. Puedes usar variables como {{ company }}...' };
+                if (type === 'cta') content = { text: 'ME INTERESA', url: 'https://www.humm.cl', link_type: 'conversion', service_interest: 'Interés General' };
+                if (type === 'image') content = { url: '' };
+
+                this.blocks.push({
+                    type: type,
+                    content: content
+                });
+                this.activeIndex = this.blocks.length - 1;
+            },
+
+            removeBlock(index) {
+                this.blocks.splice(index, 1);
+                if (this.activeIndex === index) this.activeIndex = null;
+            },
+
+            moveUp(index) {
+                if (index > 0) {
+                    const temp = this.blocks[index];
+                    this.blocks[index] = this.blocks[index - 1];
+                    this.blocks[index - 1] = temp;
+                    this.activeIndex = index - 1;
+                }
+            },
+
+            moveDown(index) {
+                if (index < this.blocks.length - 1) {
+                    const temp = this.blocks[index];
+                    this.blocks[index] = this.blocks[index + 1];
+                    this.blocks[index + 1] = temp;
+                    this.activeIndex = index + 1;
+                }
+            },
+
+            uploadImage(event, block, propertyName = 'url') {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                if (file.size > 200 * 1024) {
+                    alert(`El archivo pesa ${(file.size / 1024).toFixed(0)} KB. El tamaño máximo permitido es 200 KB.`);
+                    event.target.value = '';
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('image', file);
+
+                fetch('{% url "campaigns:upload_image" %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        block.content[propertyName] = data.url;
+                    } else {
+                        alert(data.message || 'Error al subir la imagen.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Upload error:', error);
+                    alert('Error de conexión al subir la imagen.');
+                });
+            },
+
+            saveCampaign() {
+                const button = event.target;
+                const originalText = button.innerText;
+                button.innerText = 'Guardando...';
+
+                fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ 
+                        theme: this.theme,
+                        blocks: this.blocks 
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        button.innerText = '¡Guardado!';
+                        setTimeout(() => button.innerText = originalText, 2000);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error de conexión al guardar.');
+                        button.innerText = originalText;
+                    });
+            },
+
+            sendTestEmail() {
+                this.testSending = true;
+                fetch('{% url "campaigns:send" campaign.id %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ is_test: true, test_email: this.testEmail })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    this.testSending = false;
+                    this.showTestModal = false;
+                    alert(data.message || 'Correo de prueba enviado con éxito.');
+                })
+                .catch(error => {
+                    this.testSending = false;
+                    alert('Error al enviar prueba: ' + error.message);
+                });
+            },
+
+            sendCampaign() {
+                this.sendingState = 'sending';
+
+                fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ 
+                        theme: this.theme,
+                        blocks: this.blocks 
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error("Error al guardar diseño.");
+
+                        let scheduledAt = null;
+                        if (this.scheduledDate && this.scheduledTime) {
+                            scheduledAt = `${this.scheduledDate}T${this.scheduledTime}:00`;
+                        }
+
+                        return fetch('{% url "campaigns:send" campaign.id %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({ scheduled_at: scheduledAt })
+                        });
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.sendingState = 'done';
+                            setTimeout(() => {
+                                window.location.href = '{% url "campaigns:list" %}';
+                            }, 1200);
+                        } else {
+                            throw new Error(data.message || "Error al procesar envío.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.sendingState = 'error';
+                        alert('Ocurrió un error: ' + error.message);
+                        setTimeout(() => this.sendingState = 'idle', 3000);
+                    });
+            }
+        }
+    }
+</script>
+{% endblock %}

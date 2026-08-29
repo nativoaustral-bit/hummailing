@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Contactos | Hummailing{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4 space-y-6">
+    <div class="flex items-center space-x-2">
+        <a href="{% url 'contacts:list' %}" class="text-xs font-bold text-brand-blue hover:underline">← Volver a Contactos</a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div class="flex items-center space-x-3 mb-6">
+            <span class="p-3 bg-blue-50 text-brand-blue rounded-xl text-2xl">📥</span>
+            <div>
+                <h1 class="text-xl font-bold text-brand-navy">Importar Contactos Masivos</h1>
+                <p class="text-xs text-slate-500">Carga tu base de prospectos en formato CSV o Excel (.xlsx, .xls).</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="border-2 border-dashed border-slate-300 hover:border-brand-blue rounded-2xl p-8 text-center bg-slate-50 transition-colors cursor-pointer">
+                <input type="file" name="file" required accept=".csv, .xlsx, .xls" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
+                <p class="text-[11px] text-slate-400 mt-2">Formatos soportados: CSV (separado por comas) o Libro Excel.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Etiqueta de Asignación Automática (Opcional)</label>
+                <input type="text" name="tag" placeholder="ej. Base Clientes 2026, Minería Santiago..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                <p class="text-[10px] text-slate-400 mt-1">Todos los contactos del archivo se asociarán automáticamente a esta etiqueta.</p>
+            </div>
+
+            <!-- Guía de Columnas -->
+            <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-4 text-xs text-slate-700 space-y-2">
+                <p class="font-bold text-brand-navy">📋 Formato sugerido para las columnas de tu archivo:</p>
+                <ul class="list-disc list-inside text-[11px] text-slate-600 space-y-1">
+                    <li><strong>email</strong> <span class="text-red-500 font-bold">(Obligatorio)</span>: Correo electrónico del contacto.</li>
+                    <li><strong>nombre</strong> (Opcional): Nombre de pila.</li>
+                    <li><strong>apellido</strong> (Opcional): Apellidos.</li>
+                    <li><strong>empresa</strong> (Opcional): Nombre de la empresa o emprendimiento.</li>
+                    <li><strong>telefono</strong> (Opcional): Número de teléfono o WhatsApp.</li>
+                </ul>
+                <p class="text-[10px] text-brand-blue mt-2">
+                    💡 <em>Hummailing detectará automáticamente correos duplicados y respetará a las personas que previamente se hayan dado de baja.</em>
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'contacts:list' %}" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2">Cancelar</a>
+                <button type="submit" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-colors">
+                    Comenzar Importación
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

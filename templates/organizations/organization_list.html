@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}Organizaciones Clientes | Master Humm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="text-xs font-bold text-brand-blue hover:underline">← Panel Master</a>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight mt-1">Organizaciones y Clientes</h1>
+            <p class="text-xs text-slate-500">Administra las empresas que tienen acceso a Hummailing, sus límites y estado.</p>
+        </div>
+        <a href="{% url 'organizations:organization_create' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5 self-start sm:self-auto">
+            <span>➕</span>
+            <span>Nueva Organización</span>
+        </a>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <form method="get" class="w-full sm:w-auto flex-1 flex gap-2">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nombre, RUT, correo..." class="w-full sm:max-w-md bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+            <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Buscar</button>
+        </form>
+        <div class="flex items-center space-x-2 text-xs">
+            <a href="?status=" class="px-3 py-1.5 rounded-lg font-bold {% if not status %}bg-brand-navy text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">Todas</a>
+            <a href="?status=active" class="px-3 py-1.5 rounded-lg font-bold {% if status == 'active' %}bg-emerald-600 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">Activas</a>
+            <a href="?status=suspended" class="px-3 py-1.5 rounded-lg font-bold {% if status == 'suspended' %}bg-red-600 text-white{% else %}bg-slate-100 text-slate-600 hover:bg-slate-200{% endif %}">Suspendidas</a>
+        </div>
+    </div>
+
+    <!-- Tabla de Organizaciones -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Organización / Cliente</th>
+                        <th class="px-5 py-3.5">Remitente Autorizado</th>
+                        <th class="px-5 py-3.5 text-center">Contactos</th>
+                        <th class="px-5 py-3.5 text-center">Campañas</th>
+                        <th class="px-5 py-3.5 text-center">Límite Mensual</th>
+                        <th class="px-5 py-3.5 text-center">Estado (Activa / Suspendida)</th>
+                        <th class="px-5 py-3.5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for org in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-900 text-sm">{{ org.name }}</p>
+                            {% if org.trade_name %}<p class="text-slate-500">{{ org.trade_name }}</p>{% endif %}
+                            <p class="text-[11px] text-slate-400 mt-0.5">{{ org.email }}{% if org.rut %} • RUT: {{ org.rut }}{% endif %}</p>
+                        </td>
+                        <td class="px-5 py-4">
+                            <span class="font-medium text-slate-800">{{ org.default_sender_name }}</span>
+                            <p class="text-[11px] text-slate-400">&lt;{{ org.default_sender_email }}&gt;</p>
+                            <p class="text-[10px] text-brand-blue mt-0.5">Respuestas a: {{ org.default_reply_to }}</p>
+                        </td>
+                        <td class="px-5 py-4 text-center font-bold text-slate-800">
+                            {{ org.contact_count }} <span class="text-[10px] text-slate-400 font-normal">/ {{ org.max_contacts }}</span>
+                        </td>
+                        <td class="px-5 py-4 text-center font-bold text-slate-800">
+                            {{ org.campaign_count }}
+                        </td>
+                        <td class="px-5 py-4 text-center font-semibold text-slate-600">
+                            {{ org.monthly_email_limit|default:"5000" }} envíos
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <!-- Switch Interactivo Activar / Suspender -->
+                            <div class="flex items-center justify-center space-x-2">
+                                <form method="post" action="{% url 'organizations:organization_toggle_status' org.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {% if org.status == 'active' %}bg-emerald-500{% else %}bg-slate-300{% endif %}" 
+                                        role="switch" 
+                                        aria-checked="{% if org.status == 'active' %}true{% else %}false{% endif %}" 
+                                        title="{% if org.status == 'active' %}Hacer clic para Suspender{% else %}Hacer clic para Activar{% endif %}">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {% if org.status == 'active' %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                                    </button>
+                                </form>
+                                <span class="text-[11px] font-bold {% if org.status == 'active' %}text-emerald-700{% else %}text-slate-400{% endif %}">
+                                    {% if org.status == 'active' %}Activa{% else %}Inactiva{% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-right space-x-2">
+                            <a href="{% url 'organizations:impersonate_organization' org.id %}" class="bg-brand-blue/10 hover:bg-brand-blue text-brand-blue hover:text-white px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors inline-flex items-center space-x-1" title="Entrar en modo soporte para ver sus contactos y campañas">
+                                <span>Soporte</span>
+                                <span>↗</span>
+                            </a>
+                            <a href="{% url 'organizations:organization_edit' org.id %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors inline-block">
+                                Editar
+                            </a>
+                            {% if org.name != "Humm Ecosistema" %}
+                            <form method="post" action="{% url 'organizations:organization_delete' org.id %}" onsubmit="return confirm('⚠️ ¿Estás completamente seguro de ELIMINAR permanentemente a {{ org.name }} y todos sus datos? Esta acción no se puede deshacer.');" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1.5 rounded-lg font-bold text-xs transition-colors" title="Eliminar Organización">
+                                    Eliminar
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-8 text-center text-slate-400">
+                            No se encontraron organizaciones con los criterios seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

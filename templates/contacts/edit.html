@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Contacto: {{ contact.email }} | Hummailing{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4 space-y-6">
+    <div class="flex items-center space-x-2">
+        <a href="{% url 'contacts:list' %}" class="text-xs font-bold text-brand-blue hover:underline">← Volver a Contactos</a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <h1 class="text-xl font-bold text-brand-navy mb-1">Editar Contacto</h1>
+        <p class="text-xs text-slate-500 mb-6">Actualiza los datos y etiquetas asignadas a este contacto.</p>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Correo Electrónico *</label>
+                <input type="email" name="email" value="{{ contact.email }}" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre</label>
+                    <input type="text" name="first_name" value="{{ contact.first_name|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Apellido</label>
+                    <input type="text" name="last_name" value="{{ contact.last_name|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Empresa / Emprendimiento</label>
+                    <input type="text" name="company" value="{{ contact.company|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cargo</label>
+                    <input type="text" name="job_title" value="{{ contact.job_title|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Teléfono</label>
+                    <input type="text" name="phone" value="{{ contact.phone|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Rubro / Industria</label>
+                    <input type="text" name="industry" value="{{ contact.industry|default:'' }}" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Estado</label>
+                    <select name="status" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        {% for code, label in contact.STATUS_CHOICES %}
+                        <option value="{{ code }}" {% if contact.status == code %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Etiquetas (separadas por coma)</label>
+                <input type="text" name="tags_string" value="{{ tags_string }}" placeholder="Clientes, VIP, Santiago, Minería" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                <p class="text-[10px] text-slate-400 mt-1">Escribe las etiquetas separadas por comas. Las nuevas etiquetas se crearán automáticamente.</p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'contacts:list' %}" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2">Cancelar</a>
+                <button type="submit" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-colors">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

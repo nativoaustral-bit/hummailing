@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo Comunicado Masivo | Master Humm{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4 space-y-6">
+    <div class="flex items-center space-x-2">
+        <a href="{% url 'organizations:broadcast_list' %}" class="text-xs font-bold text-brand-blue hover:underline">← Volver a Comunicados</a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div class="flex items-center space-x-3 mb-6">
+            <span class="p-3 bg-amber-50 text-brand-orange rounded-xl text-2xl">📢</span>
+            <div>
+                <h1 class="text-xl font-bold text-brand-navy">Redactar Comunicado a Clientes</h1>
+                <p class="text-xs text-slate-500">Envía un mensaje oficial por correo a los administradores de organizaciones activas.</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Título Interno del Comunicado</label>
+                <input type="text" name="title" placeholder="ej. Actualización de Plataforma Septiembre 2026" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Asunto del Correo *</label>
+                <input type="text" name="subject" required placeholder="ej. [Hummailing] Importante: Mejoras en la entrega de correos" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none font-medium">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Destinatarios</label>
+                <select name="target_audience" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    <option value="all_active_orgs">Todos los Administradores de Empresas Activas</option>
+                    <option value="all_users">Todos los Usuarios Registrados</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Contenido del Mensaje *</label>
+                <textarea name="message" required rows="8" placeholder="Estimados clientes,&#10;&#10;Nos complace informarles que hemos implementado nuevas mejoras en Hummailing..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none leading-relaxed"></textarea>
+                <p class="text-[10px] text-slate-400 mt-1">El mensaje será enviado con la plantilla institucional oficial de Hummailing.</p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'organizations:broadcast_list' %}" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2">Cancelar</a>
+                <button type="submit" onclick="return confirm('¿Confirmas el envío masivo de este comunicado a todos los clientes seleccionados?');" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                    <span>🚀 Despachar Comunicado</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

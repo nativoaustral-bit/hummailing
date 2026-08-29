@@ -1,0 +1,33 @@
+ 
+ -------------- celery@Mac-mini-de-Rodrigo.local v5.6.3 (recovery)
+--- ***** ----- 
+-- ******* ---- macOS-26.5.2-arm64-arm-64bit-Mach-O 2026-08-28 18:20:27
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         config:0x109cf63c0
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 10 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> celery           exchange=celery(direct) key=celery
+                
+
+[tasks]
+  . campaigns.tasks.send_campaign_task
+  . config.celery.debug_task
+
+[2026-08-28 18:20:27,943: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-08-28 18:20:27,945: INFO/MainProcess] mingle: searching for neighbors
+[2026-08-28 18:20:28,953: INFO/MainProcess] mingle: all alone
+[2026-08-28 18:20:29,011: INFO/MainProcess] celery@Mac-mini-de-Rodrigo.local ready.
+[2026-08-28 18:55:32,318: INFO/MainProcess] Task campaigns.tasks.send_campaign_task[6aef5d36-6d41-4f4a-a189-6df736794302] received
+[2026-08-28 18:55:32,669: INFO/ForkPoolWorker-8] Sent email to benjaminst.uach@gmail.com, ID: 3b68e9e7-539e-4478-939a-3b995825d243
+[2026-08-28 18:55:32,968: INFO/ForkPoolWorker-8] Sent email to nativoaustral@gmail.com, ID: 4a5f3885-e439-43e3-bcf8-8a9be61a708a
+[2026-08-28 18:55:33,279: INFO/ForkPoolWorker-8] Sent email to rmerino@hummcocreation.com, ID: 79328418-d41c-4541-a3f8-dfbe717e314a
+[2026-08-28 18:55:33,280: INFO/ForkPoolWorker-8] Campaign 2 dispatch completed. Success: 3, Errors: 0
+[2026-08-28 18:55:33,284: INFO/ForkPoolWorker-8] Task campaigns.tasks.send_campaign_task[6aef5d36-6d41-4f4a-a189-6df736794302] succeeded in 0.9615611249992071s: None
+[2026-08-28 18:57:21,512: INFO/MainProcess] Task campaigns.tasks.send_campaign_task[a1b2cb3a-97d9-4d7e-8e4a-4968fde1b8f3] received
+[2026-08-28 18:57:22,064: INFO/ForkPoolWorker-8] Test email sent to rmerino@hummcocreation.com
+[2026-08-28 18:57:22,065: INFO/ForkPoolWorker-8] Task campaigns.tasks.send_campaign_task[a1b2cb3a-97d9-4d7e-8e4a-4968fde1b8f3] succeeded in 0.5515828329989745s: None

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios del Sistema | Master Humm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="text-xs font-bold text-brand-blue hover:underline">← Panel Master</a>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight mt-1">Gestión de Usuarios y Accesos</h1>
+            <p class="text-xs text-slate-500">Crea cuentas de clientes, asigna roles y gestiona el restablecimiento de contraseñas temporales.</p>
+        </div>
+        <a href="{% url 'organizations:user_create' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5 self-start sm:self-auto">
+            <span>➕</span>
+            <span>Nuevo Usuario</span>
+        </a>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <form method="get" class="w-full sm:w-auto flex-1 flex flex-col sm:flex-row gap-2">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por usuario, correo, nombre..." class="w-full sm:max-w-xs bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+            <select name="org_id" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue">
+                <option value="">Todas las organizaciones</option>
+                {% for o in organizations %}
+                <option value="{{ o.id }}" {% if org_id == o.id|stringformat:"i" %}selected{% endif %}>{{ o.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Filtrar</button>
+        </form>
+    </div>
+
+    <!-- Tabla de Usuarios -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Usuario / Nombre</th>
+                        <th class="px-5 py-3.5">Organización</th>
+                        <th class="px-5 py-3.5">Rol</th>
+                        <th class="px-5 py-3.5 text-center">Clave Temporal</th>
+                        <th class="px-5 py-3.5 text-center">Estado (Activo / Inactivo)</th>
+                        <th class="px-5 py-3.5 text-center">Último Acceso</th>
+                        <th class="px-5 py-3.5 text-right">Acciones de Seguridad</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for u in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-900 text-sm">{{ u.username }}</p>
+                            <p class="text-slate-500">{{ u.get_full_name|default:"-" }}</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">{{ u.email }}</p>
+                        </td>
+                        <td class="px-5 py-4 font-medium text-slate-800">
+                            {% if u.organization %}
+                            <span class="inline-flex items-center space-x-1">
+                                <span>🏢</span>
+                                <span>{{ u.organization.name }}</span>
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400 italic">Acceso Global Humm</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {% if u.role == 'humm_admin' %}bg-amber-50 text-amber-800 border border-amber-200{% elif u.role == 'org_admin' %}bg-blue-50 text-brand-blue border border-blue-200{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                {{ u.get_role_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            {% if u.must_change_password %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                                ⚠️ Debe cambiar
+                            </span>
+                            {% else %}
+                            <span class="text-emerald-600 font-bold text-xs">✓ Clave personal</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            {% if u != request.user %}
+                            <!-- Switch Interactivo Activar / Desactivar Usuario -->
+                            <div class="flex items-center justify-center space-x-2">
+                                <form method="post" action="{% url 'organizations:user_toggle_active' u.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {% if u.is_active %}bg-emerald-500{% else %}bg-slate-300{% endif %}" 
+                                        role="switch" 
+                                        aria-checked="{% if u.is_active %}true{% else %}false{% endif %}" 
+                                        title="{% if u.is_active %}Hacer clic para Desactivar{% else %}Hacer clic para Activar{% endif %}">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {% if u.is_active %}translate-x-5{% else %}translate-x-0{% endif %}"></span>
+                                    </button>
+                                </form>
+                                <span class="text-[11px] font-bold {% if u.is_active %}text-emerald-700{% else %}text-slate-400{% endif %}">
+                                    {% if u.is_active %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </div>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Tu Cuenta
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-center text-slate-400 text-[11px]">
+                            {{ u.last_login|date:"d M Y, H:i"|default:"Nunca" }}
+                        </td>
+                        <td class="px-5 py-4 text-right space-x-2">
+                            <form method="post" action="{% url 'organizations:user_reset_password' u.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('¿Deseas generar una nueva contraseña temporal para {{ u.username }}? El usuario deberá cambiarla obligatoriamente al ingresar.');" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors" title="Generar nueva clave temporal">
+                                    🔑 Reset Clave
+                                </button>
+                            </form>
+                            {% if u != request.user %}
+                            <form method="post" action="{% url 'organizations:user_delete' u.id %}" onsubmit="return confirm('⚠️ ¿Estás seguro de eliminar permanentemente al usuario {{ u.username }}?');" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1.5 rounded-lg font-bold text-xs transition-colors" title="Eliminar Usuario">
+                                    Eliminar
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-8 text-center text-slate-400">
+                            No se encontraron usuarios.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

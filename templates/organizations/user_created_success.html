@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuario Creado Exitosamente | Master Humm{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+    <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div class="text-center mb-6">
+            <span class="inline-block p-3 bg-emerald-50 text-emerald-600 rounded-2xl text-3xl mb-2">🎉</span>
+            <h1 class="text-2xl font-black text-slate-900">¡Usuario Creado Exitosamente!</h1>
+            <p class="text-xs text-slate-500 mt-1">Copia estas credenciales temporales y envíaselas al cliente de forma segura.</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6 space-y-3 text-xs" x-data="{ copied: false }">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-slate-400 uppercase">Organización</span>
+                <span class="font-bold text-slate-900">{{ created_user.organization.name }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-slate-400 uppercase">Nombre Completo</span>
+                <span class="font-medium text-slate-800">{{ created_user.get_full_name|default:"-" }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-slate-400 uppercase">Usuario</span>
+                <span class="font-mono font-bold text-brand-navy text-sm bg-white px-2 py-0.5 rounded border">{{ created_user.username }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                <span class="font-bold text-slate-400 uppercase">Contraseña Temporal</span>
+                <span class="font-mono font-bold text-brand-orange text-sm bg-white px-2 py-0.5 rounded border">{{ temp_password }}</span>
+            </div>
+            <div class="flex justify-between items-center pt-1">
+                <span class="font-bold text-slate-400 uppercase">URL de Acceso</span>
+                <span class="font-mono text-slate-600">http://localhost:8000</span>
+            </div>
+            
+            <div class="pt-3 text-center">
+                <button @click="navigator.clipboard.writeText('Plataforma: Hummailing (http://localhost:8000)\nUsuario: {{ created_user.username }}\nContraseña Temporal: {{ temp_password }}'); copied = true; setTimeout(() => copied = false, 2500)" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg text-xs shadow transition-colors flex items-center justify-center space-x-2">
+                    <span x-text="copied ? '✅ ¡Copiado al portapapeles!' : '📋 Copiar Datos de Acceso'"></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded-xl mb-6">
+            <strong>🔒 Nota de Seguridad:</strong> El sistema obligará a <strong>{{ created_user.username }}</strong> a cambiar esta contraseña temporal apenas inicie sesión por primera vez.
+        </div>
+
+        <div class="text-center">
+            <a href="{% url 'organizations:user_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-2.5 rounded-xl text-xs transition-colors">
+                ← Volver a la Lista de Usuarios
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

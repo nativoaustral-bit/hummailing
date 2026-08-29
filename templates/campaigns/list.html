@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Campañas de Correo | Hummailing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Campañas de Correo</h1>
+            <p class="text-xs text-slate-500">Diseña, programa y envía correos masivos a tus audiencias.</p>
+        </div>
+        <a href="{% url 'campaigns:create' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5 self-start sm:self-auto">
+            <span>➕</span>
+            <span>Nueva Campaña</span>
+        </a>
+    </div>
+
+    <!-- Tabla de Campañas -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Campaña / Asunto</th>
+                        <th class="px-5 py-3.5">Audiencia / Destinatarios</th>
+                        <th class="px-5 py-3.5 text-center">Estado</th>
+                        <th class="px-5 py-3.5">Fecha</th>
+                        <th class="px-5 py-3.5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for c in campaigns %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-900 text-sm">{{ c.name }}</p>
+                            <p class="text-xs text-slate-500 mt-0.5">{{ c.subject }}</p>
+                        </td>
+                        <td class="px-5 py-4">
+                            {% if c.target_tag %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-200">
+                                🏷️ {{ c.target_tag.name }}
+                            </span>
+                            {% elif c.segment %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                🎯 {{ c.segment.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400">Todos los contactos activos</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if c.status == 'sent' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif c.status == 'scheduled' %}bg-amber-50 text-amber-800 border border-amber-200{% elif c.status == 'sending' %}bg-blue-50 text-brand-blue border border-blue-200 animate-pulse{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                {{ c.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-slate-500">
+                            {{ c.created_at|date:"d M Y" }}
+                        </td>
+                        <td class="px-5 py-4 text-right space-x-2">
+                            <a href="{% url 'campaigns:duplicate' c.id %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors inline-block" title="Crear una copia de esta campaña">
+                                📑 Duplicar
+                            </a>
+                            <a href="{% url 'campaigns:editor' c.id %}" class="bg-brand-blue hover:bg-brand-navy text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-colors shadow-sm inline-block">
+                                ✏️ Diseñar
+                            </a>
+                            <form method="POST" action="{% url 'campaigns:delete' c.id %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente esta campaña?');" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-xs px-2 py-1">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-8 text-center text-slate-400">
+                            No hay campañas creadas aún en tu organización.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Nota informativa al pie -->
+        <div class="bg-slate-50 border-t border-slate-200 px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
+            <div class="flex items-center space-x-2">
+                <span class="text-brand-blue font-bold">💡 Nota:</span>
+                <span>Para enviar nuevamente una campaña existente o ajustar su diseño, ingresa a <strong>✏️ Diseñar</strong>.</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Puedes usar <strong>📑 Duplicar</strong> para crear una nueva versión manteniendo el diseño base.</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

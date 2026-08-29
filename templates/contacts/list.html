@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Contactos | Hummailing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Base de Contactos</h1>
+            <p class="text-xs text-slate-500">Contactos privados de tu organización (Total: {{ total_count }} contactos).</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'contacts:import' %}" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition-colors flex items-center space-x-1.5">
+                <span>📥</span>
+                <span>Importar CSV / Excel</span>
+            </a>
+            <a href="{% url 'contacts:create' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                <span>➕</span>
+                <span>Nuevo Contacto</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <form method="get" class="w-full md:w-auto flex-1 flex flex-col sm:flex-row gap-2">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por email, nombre, empresa, comuna..." class="w-full sm:max-w-xs bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+            
+            <select name="tag" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue">
+                <option value="">Todas las etiquetas</option>
+                {% for t in tags %}
+                <option value="{{ t.name }}" {% if tag_filter == t.name %}selected{% endif %}>🏷️ {{ t.name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="status" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue">
+                <option value="">Todos los estados</option>
+                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Activo</option>
+                <option value="unsubscribed" {% if status_filter == 'unsubscribed' %}selected{% endif %}>Dado de baja</option>
+                <option value="bounced" {% if status_filter == 'bounced' %}selected{% endif %}>Rebotado</option>
+            </select>
+
+            <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Filtrar</button>
+        </form>
+    </div>
+
+    <!-- Tabla de Contactos -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Correo Electrónico</th>
+                        <th class="px-5 py-3.5">Nombre</th>
+                        <th class="px-5 py-3.5">Empresa / Cargo</th>
+                        <th class="px-5 py-3.5">Etiquetas</th>
+                        <th class="px-5 py-3.5 text-center">Estado</th>
+                        <th class="px-5 py-3.5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for contact in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4 font-bold text-slate-900">
+                            {{ contact.email }}
+                            {% if contact.phone %}
+                            <p class="text-[11px] text-slate-400 font-normal">📞 {{ contact.phone }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 font-medium text-slate-800">
+                            {{ contact.first_name }} {{ contact.last_name }}
+                        </td>
+                        <td class="px-5 py-4 text-slate-600">
+                            {{ contact.company|default:"-" }}
+                            {% if contact.job_title %}<span class="text-[10px] text-slate-400 block">{{ contact.job_title }}</span>{% endif %}
+                        </td>
+                        <td class="px-5 py-4">
+                            <div class="flex flex-wrap gap-1">
+                                {% for tag in contact.tags.all %}
+                                <span class="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-blue-50 text-brand-blue border border-blue-200">{{ tag.name }}</span>
+                                {% empty %}
+                                <span class="text-slate-400 text-xs">-</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {% if contact.status == 'active' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif contact.status == 'unsubscribed' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                {{ contact.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-right space-x-2">
+                            <a href="{% url 'contacts:edit' contact.id %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors">
+                                Editar
+                            </a>
+                            <form method="POST" action="{% url 'contacts:delete' contact.id %}" onsubmit="return confirm('¿Estás seguro de eliminar este contacto?');" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-xs px-2 py-1">
+                                    Eliminar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-8 text-center text-slate-400">
+                            No hay contactos registrados aún en tu organización.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

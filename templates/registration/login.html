@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar a Hummailing — Una herramienta de Humm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#173960',
+                            'navy-dark': '#0F243E',
+                            blue: '#0C6FAC',
+                            'blue-light': '#24A7DB',
+                            orange: '#F59A29',
+                            cream: '#EFEAE1',
+                            bg: '#F8FAFC',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-brand-bg p-4 antialiased font-sans">
+    <div class="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
+        
+        <!-- Logo Hummailing -->
+        <div class="text-center mb-8">
+            <img src="{% static 'img/logo.svg' %}" alt="Hummailing Logo" class="h-14 mx-auto mb-3">
+            <p class="text-xs text-brand-blue font-bold uppercase tracking-widest">Plataforma de Mailing para Emprendedores</p>
+            <p class="text-xs text-slate-400 mt-1">Una herramienta del ecosistema Humm</p>
+        </div>
+        
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-3 rounded-lg text-xs font-medium border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 mb-4 text-center font-medium">
+                    Usuario o contraseña incorrectos. Verifica tus credenciales.
+                </div>
+            {% endif %}
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre de Usuario</label>
+                    <input type="text" name="username" required autofocus placeholder="ej. usuario.empresa" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2.5 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all">
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-3 px-4 rounded-xl mt-6 uppercase tracking-wider text-sm shadow-md transition-colors flex items-center justify-center space-x-2">
+                <span>Ingresar a mi cuenta</span>
+                <span>→</span>
+            </button>
+            <input type="hidden" name="next" value="{% if next %}{{ next }}{% else %}/{% endif %}">
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-400">
+            <p>¿No tienes acceso o perdiste tu contraseña?</p>
+            <p class="mt-1 font-medium text-brand-navy">Contacta a tu ejecutivo de Humm para solicitar tus credenciales.</p>
+        </div>
+    </div>
+</body>
+</html>

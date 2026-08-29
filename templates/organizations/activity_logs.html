@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditoría y Actividad | Master Humm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="text-xs font-bold text-brand-blue hover:underline">← Panel Master</a>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight mt-1">Registro de Actividad y Auditoría</h1>
+            <p class="text-xs text-slate-500">Historial completo de acciones administrativas, cambios de seguridad y envíos en Hummailing.</p>
+        </div>
+    </div>
+
+    <!-- Tabla de Logs -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Fecha y Hora</th>
+                        <th class="px-5 py-3.5">Acción</th>
+                        <th class="px-5 py-3.5">Organización</th>
+                        <th class="px-5 py-3.5">Usuario Responsable</th>
+                        <th class="px-5 py-3.5">Detalles</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for log in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-3.5 font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                            {{ log.timestamp|date:"d M Y, H:i:s" }}
+                        </td>
+                        <td class="px-5 py-3.5 font-bold text-slate-900">
+                            {{ log.action }}
+                        </td>
+                        <td class="px-5 py-3.5 font-medium text-slate-800">
+                            {{ log.organization.name|default:"Global Humm" }}
+                        </td>
+                        <td class="px-5 py-3.5 text-brand-blue font-semibold">
+                            {{ log.user.username|default:"Sistema" }}
+                        </td>
+                        <td class="px-5 py-3.5 text-slate-600">
+                            {{ log.details }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-8 text-center text-slate-400">
+                            No hay registros de actividad aún.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

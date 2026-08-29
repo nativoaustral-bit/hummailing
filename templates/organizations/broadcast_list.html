@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Comunicados a Clientes | Master Humm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="text-xs font-bold text-brand-blue hover:underline">← Panel Master</a>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight mt-1">Comunicados Masivos a Clientes</h1>
+            <p class="text-xs text-slate-500">Envía avisos oficiales, mantenimientos o novedades a todas las empresas clientes de Hummailing.</p>
+        </div>
+        <a href="{% url 'organizations:broadcast_announcement' %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors flex items-center space-x-1.5 self-start sm:self-auto">
+            <span>📢</span>
+            <span>Nuevo Comunicado</span>
+        </a>
+    </div>
+
+    <!-- Tabla de Comunicados -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Asunto / Título</th>
+                        <th class="px-5 py-3.5">Audiencia</th>
+                        <th class="px-5 py-3.5 text-center">Destinatarios</th>
+                        <th class="px-5 py-3.5">Enviado Por</th>
+                        <th class="px-5 py-3.5">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for b in broadcasts %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-900 text-sm">{{ b.subject }}</p>
+                            {% if b.title %}<p class="text-xs text-slate-500">{{ b.title }}</p>{% endif %}
+                        </td>
+                        <td class="px-5 py-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-200">
+                                {{ b.get_target_audience_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center font-bold text-slate-800">
+                            {{ b.recipients_count }} correos
+                        </td>
+                        <td class="px-5 py-4 text-slate-600">
+                            {{ b.sent_by.username|default:"Humm Admin" }}
+                        </td>
+                        <td class="px-5 py-4 text-slate-500 font-mono text-[11px]">
+                            {{ b.sent_at|date:"d M Y, H:i" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-8 text-center text-slate-400">
+                            No se han enviado comunicados masivos a los clientes todavía.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

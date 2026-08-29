@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Oportunidades Comerciales | Hummailing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Oportunidades Comerciales</h1>
+            <p class="text-xs text-slate-500">Contactos interesados que hicieron clic en enlaces de conversión de tus campañas.</p>
+        </div>
+    </div>
+
+    <!-- Filtros de Estado y Búsqueda -->
+    <div class="space-y-3">
+        <!-- Badges de Estados -->
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="?status=" class="px-3 py-1.5 rounded-xl font-bold transition-all {% if not current_status %}bg-brand-navy text-white shadow-sm{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+                Todas las oportunidades
+            </a>
+            {% for code, data in status_counts.items %}
+            <a href="?status={{ code }}" class="px-3 py-1.5 rounded-xl font-bold transition-all flex items-center space-x-1.5 {% if current_status == code %}bg-brand-blue text-white shadow-sm{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+                <span>{{ data.label }}</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] {% if current_status == code %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-600{% endif %} font-black">{{ data.count }}</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Búsqueda -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <form method="get" class="flex-1 flex gap-2 max-w-md">
+                <input type="hidden" name="status" value="{{ current_status }}">
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar por título, contacto, empresa o correo..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+                <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Buscar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de Oportunidades -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-700">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-5 py-3.5">Oportunidad / Tema</th>
+                        <th class="px-5 py-3.5">Prospecto (Contacto)</th>
+                        <th class="px-5 py-3.5">Campaña de Origen</th>
+                        <th class="px-5 py-3.5 text-center">Prioridad</th>
+                        <th class="px-5 py-3.5 text-center">Estado</th>
+                        <th class="px-5 py-3.5">Responsable</th>
+                        <th class="px-5 py-3.5 text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for opp in page_obj %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-900 text-sm">{{ opp.title }}</p>
+                            <p class="text-xs text-brand-blue font-medium mt-0.5">🎯 {{ opp.interest_topic|default:"Interés general" }}</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Detectada: {{ opp.created_at|date:"d M Y, H:i" }}</p>
+                        </td>
+                        <td class="px-5 py-4">
+                            <p class="font-bold text-slate-800">{{ opp.contact.first_name }} {{ opp.contact.last_name }}</p>
+                            <p class="text-xs text-slate-500">{{ opp.contact.email }}</p>
+                            {% if opp.contact.company %}<p class="text-[11px] text-slate-400">🏢 {{ opp.contact.company }}</p>{% endif %}
+                            {% if opp.contact.phone %}<p class="text-[11px] text-emerald-600 font-medium">📞 {{ opp.contact.phone }}</p>{% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-slate-600">
+                            {{ opp.campaign.name|default:"-" }}
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold {% if opp.priority == 'high' %}bg-red-50 text-red-700 border border-red-200{% elif opp.priority == 'medium' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                {{ opp.get_priority_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {% if opp.status == 'new' %}bg-blue-50 text-brand-blue border border-blue-200{% elif opp.status == 'won' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif opp.status == 'lost' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-amber-50 text-amber-800 border border-amber-200{% endif %}">
+                                {{ opp.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-5 py-4 text-slate-600">
+                            {{ opp.assigned_to.get_full_name|default:opp.assigned_to.username|default:"Sin asignar" }}
+                        </td>
+                        <td class="px-5 py-4 text-right">
+                            <a href="{% url 'opportunities:detail' opp.id %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors">
+                                Gestionar →
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-5 py-8 text-center text-slate-400">
+                            No se encontraron oportunidades registradas en esta categoría.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

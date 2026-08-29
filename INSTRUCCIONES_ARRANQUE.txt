@@ -1,0 +1,64 @@
+======================================================
+     MANUAL DE ARRANQUE RAPIDO - HUMM CAMPAIGNS
+======================================================
+
+Este archivo contiene las instrucciones para encender y apagar 
+el motor de envíos de Humm Campaigns en tu computador local.
+
+------------------------------------------------------
+1. COMO ENCENDER LA PLATAFORMA (Y ENVIAR CORREOS)
+------------------------------------------------------
+Para encender tanto la página web (Django) como el motor 
+asíncrono de envíos de correos (Celery), solo necesitas ejecutar un comando:
+
+Abre tu terminal, asegúrate de estar en la carpeta del proyecto 
+(/Users/rmerinog/PLATAFORMAS/CAMPAIGNS) y escribe:
+
+./start.sh
+
+Este script hará lo siguiente por ti:
+ - Activará el entorno virtual.
+ - Encenderá el servidor de Celery en segundo plano.
+ - Encenderá el servidor web de Django.
+
+Una vez que diga "Quit the server with CONTROL-C", puedes ir a 
+http://localhost:8000 en tu navegador.
+
+Credenciales de acceso:
+- Usuario: admin
+- Contraseña: admin
+
+
+------------------------------------------------------
+2. COMO APAGAR LA PLATAFORMA
+------------------------------------------------------
+Cuando termines de trabajar:
+
+1. Ve a la misma ventana del terminal donde ejecutaste el comando.
+2. Presiona las teclas: Control + C
+3. El script detectará que apagaste la web y, automáticamente, 
+   matará al proceso de Celery en el fondo para que tu 
+   Mac quede libre de procesos ocultos.
+
+
+------------------------------------------------------
+PREGUNTAS FRECUENTES (FAQ)
+------------------------------------------------------
+¿Necesito encender Redis?
+R: No, lo dejamos configurado como un servicio "fantasma" de Mac. 
+   Redis siempre está corriendo automáticamente por detrás 
+   gracias a Homebrew, así que no debes preocuparte por él.
+
+¿Por qué los botones "Call to Action" no abren nada en las pruebas?
+R: Recuerda que, al diseñar un correo, debes hacer clic en el botón 
+   y escribir la URL completa de tu Landing Page en la sección izquierda, 
+   para que cuando tus clientes lo reciban, sean redirigidos 
+   allí y capturen sus datos (Leads).
+
+¿Qué hago si veo el error "Retry limit exceeded (Celery)"?
+R: Significa que encendiste el servidor web ANTES de que la conexión 
+   con Redis estuviera lista. Solo debes presionar Control+C y volver 
+   a ejecutar ./start.sh.
+
+------------------------------------------------------
+======================================================
