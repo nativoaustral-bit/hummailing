@@ -190,6 +190,30 @@ def campaign_preview(request, campaign_id):
     campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
     return render(request, 'campaigns/preview.html', {'campaign': campaign})
 
+import threading
+
+def dispatch_campaign_task(campaign_id, test_email=None, eta=None):
+    """
+    Despacha la tarea de envío vía Celery o ejecuta en hilo en segundo plano
+    si Redis/Celery no está activo en el servidor.
+    """
+    try:
+        if eta:
+            send_campaign_task.apply_async((campaign_id,), eta=eta)
+        elif test_email:
+            send_campaign_task.delay(campaign_id, test_email=test_email)
+        else:
+            send_campaign_task.delay(campaign_id)
+    except Exception as e:
+        # Fallback inmediato en segundo plano
+        t = threading.Thread(
+            target=send_campaign_task,
+            args=(campaign_id,),
+            kwargs={'test_email': test_email}
+        )
+        t.daemon = True
+        t.start()
+
 @login_required
 def campaign_send(request, campaign_id):
     org = request.organization
@@ -204,7 +228,7 @@ def campaign_send(request, campaign_id):
             
             if is_test and test_email:
                 # Envío de prueba a un solo correo
-                send_campaign_task.delay(campaign.id, test_email=test_email)
+                dispatch_campaign_task(campaign.id, test_email=test_email)
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
@@ -217,7 +241,7 @@ def campaign_send(request, campaign_id):
                 campaign.scheduled_at = parse_datetime(scheduled_at_str)
                 campaign.status = 'scheduled'
                 campaign.save()
-                send_campaign_task.apply_async((campaign.id,), eta=campaign.scheduled_at)
+                dispatch_campaign_task(campaign.id, eta=campaign.scheduled_at)
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
@@ -227,7 +251,7 @@ def campaign_send(request, campaign_id):
             else:
                 campaign.status = 'sending'
                 campaign.save()
-                send_campaign_task.delay(campaign.id)
+                dispatch_campaign_task(campaign.id)
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
