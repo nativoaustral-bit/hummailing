@@ -308,18 +308,25 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- Subir archivo -->
+                                                <!-- Subir archivo desde el equipo -->
+                                                <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">1. Subir archivo desde tu computador</label>
                                                 <input type="file" @change="uploadImage($event, block, 'logo_url')" accept="image/*"
                                                     class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
                                                 
                                                 <!-- O ingresar URL directa -->
-                                                <div class="mt-2">
-                                                    <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">O pegar enlace directo del logo (URL)</label>
+                                                <div class="mt-2.5">
+                                                    <div class="flex justify-between items-center mb-0.5">
+                                                        <label class="block text-[9px] font-semibold text-slate-400 uppercase">2. O ingresar URL de imagen</label>
+                                                        <button type="button" @click="block.content.logo_url = 'https://mailing.humm.cl/static/img/logo.svg'; blocks = [...blocks]"
+                                                            class="text-[9px] font-bold text-brand-blue hover:underline">
+                                                            + Usar Logo Humm
+                                                        </button>
+                                                    </div>
                                                     <input type="text" x-model="block.content.logo_url" placeholder="https://tu-sitio.cl/logo.png"
                                                         @input="blocks = [...blocks]"
                                                         class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
                                                 </div>
-                                                <p class="text-[9px] text-slate-400 mt-1">Límite archivo: <strong>hasta 10 MB</strong> (PNG, JPG, SVG, WEBP).</p>
+                                                <p class="text-[9px] text-slate-400 mt-1">Formatos: PNG, JPG, SVG, WEBP (hasta 10 MB).</p>
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
@@ -638,15 +645,21 @@
                     return;
                 }
 
+                // 1. Mostrar de inmediato en el canvas usando FileReader local
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    block.content[propertyName] = e.target.result;
+                    this.blocks = JSON.parse(JSON.stringify(this.blocks));
+                };
+                reader.readAsDataURL(file);
+
+                // 2. Subir en segundo plano al servidor para guardar archivo en /media/logos/
                 let csrfToken = '{{ csrf_token }}';
                 const match = document.cookie.match(/csrftoken=([^;]+)/);
                 if (match) csrfToken = match[1];
 
                 const formData = new FormData();
                 formData.append('image', file);
-
-                const fileInput = event.target;
-                const prevLabel = fileInput.previousElementSibling;
 
                 fetch('{% url "campaigns:upload_image" %}', {
                     method: 'POST',
@@ -657,20 +670,16 @@
                 })
                 .then(async response => {
                     const data = await response.json().catch(() => null);
-                    if (response.ok && data && data.status === 'success') {
+                    if (response.ok && data && data.status === 'success' && data.url) {
                         block.content[propertyName] = data.url;
                         this.blocks = JSON.parse(JSON.stringify(this.blocks));
-                    } else {
-                        const errMsg = (data && data.message) ? data.message : `Error (${response.status}): No se pudo procesar la imagen.`;
-                        alert(errMsg);
                     }
-                    fileInput.value = '';
                 })
                 .catch(error => {
-                    console.error('Upload error:', error);
-                    alert('Error al subir la imagen. Verifica que el archivo sea una imagen válida.');
-                    fileInput.value = '';
+                    console.log('Background upload notice:', error);
                 });
+
+                event.target.value = '';
             },
 
             saveCampaign() {
