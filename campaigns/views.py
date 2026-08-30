@@ -257,12 +257,12 @@ def upload_image(request):
         
     image_file = request.FILES['image']
     
-    # 1. Validar límite de tamaño: Hasta 10 MB (10 * 1024 * 1024 bytes)
-    max_size = 10 * 1024 * 1024
+    # 1. Validar límite de tamaño: Hasta 2 MB (2 * 1024 * 1024 bytes)
+    max_size = 2 * 1024 * 1024
     if image_file.size > max_size:
         return JsonResponse({
             'status': 'error',
-            'message': f'La imagen pesa {(image_file.size / (1024*1024)):.1f} MB. El tamaño máximo permitido es 10 MB.'
+            'message': f'La imagen pesa {(image_file.size / (1024*1024)):.1f} MB. El tamaño máximo permitido es 2 MB.'
         }, status=400)
         
     # 2. Validar extensión permitida

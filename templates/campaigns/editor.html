@@ -261,7 +261,7 @@
                                                 </div>
                                             </template>
                                             <div>
-                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Hasta 10 MB)</label>
+                                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Hasta 2 MB)</label>
                                                 <input type="file" @change="uploadImage($event, block, 'url')" accept="image/*"
                                                     class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
                                                 <p class="text-[9px] text-slate-400 mt-1">O ingresa una URL web:</p>
@@ -326,7 +326,7 @@
                                                         @input="blocks = [...blocks]"
                                                         class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
                                                 </div>
-                                                <p class="text-[9px] text-slate-400 mt-1">Formatos: PNG, JPG, SVG, WEBP (hasta 10 MB).</p>
+                                                <p class="text-[9px] text-slate-400 mt-1">Formatos: PNG, JPG, SVG, WEBP (hasta 2 MB).</p>
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
@@ -639,8 +639,8 @@
                 const file = event.target.files[0];
                 if (!file) return;
 
-                if (file.size > 10 * 1024 * 1024) {
-                    alert(`El archivo pesa ${(file.size / (1024*1024)).toFixed(1)} MB. El tamaño máximo permitido es 10 MB.`);
+                if (file.size > 2 * 1024 * 1024) {
+                    alert(`El archivo pesa ${(file.size / (1024*1024)).toFixed(1)} MB. El tamaño máximo permitido es 2 MB.`);
                     event.target.value = '';
                     return;
                 }
