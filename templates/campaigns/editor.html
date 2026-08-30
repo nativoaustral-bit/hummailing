@@ -242,24 +242,22 @@
 
                                 <!-- Editor de propiedades por bloque -->
                                 <div x-show="activeIndex === index" class="mt-2 space-y-2 pt-2 border-t border-slate-200">
-                                    <template x-if="block.type === 'title' || block.type === 'text'">
+                                    <div x-show="block.type === 'title' || block.type === 'text'">
                                         <textarea x-model="block.content.text"
                                             class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none"
                                             rows="3" placeholder="Escribe el contenido aquí..."></textarea>
-                                    </template>
-                                    <template x-if="block.type === 'image'">
+                                    </div>
+                                    <div x-show="block.type === 'image'">
                                         <div class="space-y-2 text-xs">
-                                            <template x-if="block.content.url">
-                                                <div class="flex items-center space-x-3 bg-slate-100 p-2 rounded-xl border border-slate-200">
-                                                    <img :src="block.content.url" class="h-12 w-12 object-cover rounded-lg border bg-white">
-                                                    <div class="flex-1 min-w-0">
-                                                        <p class="text-[11px] font-bold text-slate-700 truncate">Imagen cargada</p>
-                                                        <button type="button" @click="block.content.url = ''; blocks = [...blocks]" class="text-[10px] text-red-600 hover:underline font-semibold">
-                                                            Quitar Imagen
-                                                        </button>
-                                                    </div>
+                                            <div x-show="block.content.url && block.content.url.trim() !== ''" class="flex items-center space-x-3 bg-slate-100 p-2 rounded-xl border border-slate-200">
+                                                <img :src="block.content.url" class="h-12 w-12 object-cover rounded-lg border bg-white">
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-[11px] font-bold text-slate-700 truncate">Imagen cargada</p>
+                                                    <button type="button" @click="block.content.url = ''; blocks = [...blocks]" class="text-[10px] text-red-600 hover:underline font-semibold">
+                                                        Quitar Imagen
+                                                    </button>
                                                 </div>
-                                            </template>
+                                            </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Subir Imagen (Hasta 2 MB)</label>
                                                 <input type="file" @change="uploadImage($event, block, 'url')" accept="image/*"
@@ -270,8 +268,8 @@
                                                     class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none mt-1">
                                             </div>
                                         </div>
-                                    </template>
-                                    <template x-if="block.type === 'cta'">
+                                    </div>
+                                    <div x-show="block.type === 'cta'">
                                         <div class="space-y-2 text-xs">
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Texto del Botón</label>
@@ -291,14 +289,14 @@
                                                 </select>
                                             </div>
                                         </div>
-                                    </template>
-                                    <template x-if="block.type === 'header'">
+                                    </div>
+                                    <div x-show="block.type === 'header'">
                                         <div class="space-y-3 text-xs">
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Logo de la Empresa</label>
                                                 
                                                 <!-- Previsualización del Logo en Sidebar si existe -->
-                                                <div x-show="block.content.logo_url && block.content.logo_url.trim()" class="flex items-center space-x-3 bg-slate-100 p-2.5 rounded-xl mb-2 border border-slate-200">
+                                                <div x-show="block.content.logo_url && block.content.logo_url.trim() !== ''" class="flex items-center space-x-3 bg-slate-100 p-2.5 rounded-xl mb-2 border border-slate-200">
                                                     <img :src="block.content.logo_url" class="h-10 w-auto max-w-[120px] object-contain bg-white rounded p-1 border">
                                                     <div class="flex-1 min-w-0">
                                                         <p class="text-[11px] font-bold text-slate-700 truncate">Logo cargado</p>
@@ -309,24 +307,17 @@
                                                 </div>
 
                                                 <!-- Subir archivo desde el equipo -->
-                                                <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">1. Subir archivo desde tu computador</label>
                                                 <input type="file" @change="uploadImage($event, block, 'logo_url')" accept="image/*"
                                                     class="block w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-brand-blue file:text-white hover:file:bg-brand-navy cursor-pointer">
                                                 
                                                 <!-- O ingresar URL directa -->
-                                                <div class="mt-2.5">
-                                                    <div class="flex justify-between items-center mb-0.5">
-                                                        <label class="block text-[9px] font-semibold text-slate-400 uppercase">2. O ingresar URL de imagen</label>
-                                                        <button type="button" @click="block.content.logo_url = 'https://mailing.humm.cl/static/img/logo.svg'; blocks = [...blocks]"
-                                                            class="text-[9px] font-bold text-brand-blue hover:underline">
-                                                            + Usar Logo Humm
-                                                        </button>
-                                                    </div>
+                                                <div class="mt-2">
+                                                    <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">O pegar enlace directo del logo (URL)</label>
                                                     <input type="text" x-model="block.content.logo_url" placeholder="https://tu-sitio.cl/logo.png"
                                                         @input="blocks = [...blocks]"
                                                         class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
                                                 </div>
-                                                <p class="text-[9px] text-slate-400 mt-1">Formatos: PNG, JPG, SVG, WEBP (hasta 2 MB).</p>
+                                                <p class="text-[9px] text-slate-400 mt-1">Límite archivo: <strong>hasta 2 MB</strong> (PNG, JPG, SVG, WEBP).</p>
                                             </div>
                                             <div>
                                                 <label class="block text-[10px] font-bold text-slate-500 uppercase">Nombre de la Empresa</label>
@@ -339,10 +330,10 @@
                                                     class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:border-brand-blue focus:outline-none">
                                             </div>
                                         </div>
-                                    </template>
-                                    <template x-if="block.type === 'footer'">
+                                    </div>
+                                    <div x-show="block.type === 'footer'">
                                         <span class="text-[11px] text-slate-400">Pie legal institucional con desuscripción automática.</span>
-                                    </template>
+                                    </div>
                                 </div>
                             </div>
                         </template>
@@ -380,67 +371,57 @@
                             @click="activeIndex = index">
 
                             <!-- HEADER: Usa el color global del tema -->
-                            <template x-if="block.type === 'header'">
-                                <div class="text-center py-7 px-6 transition-colors"
-                                    :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
-                                    
-                                    <!-- Si tiene Logo definido -->
-                                    <div x-show="block.content.logo_url && block.content.logo_url.trim()" class="flex flex-col items-center justify-center">
-                                        <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto block">
-                                        <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
+                            <div x-show="block.type === 'header'" class="text-center py-7 px-6 transition-colors"
+                                :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
+                                
+                                <!-- Si tiene Logo definido -->
+                                <div x-show="block.content.logo_url && block.content.logo_url.trim() !== ''" class="flex flex-col items-center justify-center">
+                                    <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto block">
+                                    <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
+                                </div>
+
+                                <!-- Si no tiene Logo, muestra texto institucional -->
+                                <div x-show="!block.content.logo_url || block.content.logo_url.trim() === ''">
+                                    <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
+                                    <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
+                                </div>
+                            </div>
+
+                            <!-- TITLE -->
+                            <div x-show="block.type === 'title'" class="px-8 pt-8 pb-3">
+                                <h2 class="text-2xl font-black leading-tight" :style="'color: ' + (isDarkColor(theme.header_bg) ? theme.header_bg : '#1e293b')" x-text="block.content.text"></h2>
+                            </div>
+
+                            <!-- TEXT -->
+                            <div x-show="block.type === 'text'" class="px-8 py-3">
+                                <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line" x-text="block.content.text"></div>
+                            </div>
+
+                            <!-- IMAGE -->
+                            <div x-show="block.type === 'image'" class="w-full px-8 py-4 flex justify-center">
+                                <div class="w-full bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
+                                    <div x-show="block.content.url && block.content.url.trim() !== ''">
+                                        <img :src="block.content.url" class="w-full h-auto rounded-xl shadow-sm">
                                     </div>
-
-                                    <!-- Si no tiene Logo, muestra texto institucional -->
-                                    <div x-show="!block.content.logo_url || !block.content.logo_url.trim()">
-                                        <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
-                                        <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <template x-if="block.type === 'title'">
-                                <div class="px-8 pt-8 pb-3">
-                                    <h2 class="text-2xl font-black leading-tight" :style="'color: ' + (isDarkColor(theme.header_bg) ? theme.header_bg : '#1e293b')" x-text="block.content.text"></h2>
-                                </div>
-                            </template>
-
-                            <template x-if="block.type === 'text'">
-                                <div class="px-8 py-3">
-                                    <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-line" x-text="block.content.text"></div>
-                                </div>
-                            </template>
-
-                            <template x-if="block.type === 'image'">
-                                <div class="w-full px-8 py-4 flex justify-center">
-                                    <div class="w-full bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden">
-                                        <template x-if="block.content.url">
-                                            <img :src="block.content.url" class="w-full h-auto rounded-xl shadow-sm">
-                                        </template>
-                                        <template x-if="!block.content.url">
-                                            <div class="h-44 flex items-center justify-center w-full">
-                                                <span class="text-slate-400 text-xs">Sin Imagen (Sube una imagen arriba)</span>
-                                            </div>
-                                        </template>
+                                    <div x-show="!block.content.url || block.content.url.trim() === ''" class="h-44 flex items-center justify-center w-full">
+                                        <span class="text-slate-400 text-xs">Sin Imagen (Sube una imagen o pega URL en el panel izquierdo)</span>
                                     </div>
                                 </div>
-                            </template>
+                            </div>
 
                             <!-- BOTÓN CTA: Usa el color global de botones -->
-                            <template x-if="block.type === 'cta'">
-                                <div class="text-center py-7 px-8">
-                                    <a :href="block.content.url || '#'"
-                                        class="inline-block font-bold py-3.5 px-8 rounded-xl text-xs uppercase tracking-widest no-underline shadow-md transition-transform hover:scale-105"
-                                        :style="'background-color: ' + theme.button_bg + '; color: ' + (theme.button_text || '#ffffff')"
-                                        x-text="block.content.text || 'Botón'"></a>
-                                </div>
-                            </template>
+                            <div x-show="block.type === 'cta'" class="text-center py-7 px-8">
+                                <a :href="block.content.url || '#'"
+                                    class="inline-block font-bold py-3.5 px-8 rounded-xl text-xs uppercase tracking-widest no-underline shadow-md transition-transform hover:scale-105"
+                                    :style="'background-color: ' + theme.button_bg + '; color: ' + (theme.button_text || '#ffffff')"
+                                    x-text="block.content.text || 'Botón'"></a>
+                            </div>
 
-                            <template x-if="block.type === 'footer'">
-                                <div class="mt-8 p-8 bg-slate-50/80 border-t border-slate-200 text-center text-xs text-slate-500">
-                                    <p>© 2026 {{ current_organization.trade_name|default:"Humm" }} — Vía Hummailing. Recibes este correo porque estás suscrito a nuestras novedades.</p>
-                                    <p class="mt-2.5"><a href="#" class="underline font-semibold" :style="'color: ' + theme.button_bg">Cancelar suscripción</a></p>
-                                </div>
-                            </template>
+                            <!-- FOOTER -->
+                            <div x-show="block.type === 'footer'" class="mt-8 p-8 bg-slate-50/80 border-t border-slate-200 text-center text-xs text-slate-500">
+                                <p>© 2026 {{ current_organization.trade_name|default:"Humm" }} — Vía Hummailing. Recibes este correo porque estás suscrito a nuestras novedades.</p>
+                                <p class="mt-2.5"><a href="#" class="underline font-semibold" :style="'color: ' + theme.button_bg">Cancelar suscripción</a></p>
+                            </div>
 
                         </div>
                     </template>
