@@ -106,3 +106,28 @@ class TrackingEvent(models.Model):
 
     def __str__(self):
         return f"{self.contact.email} - {self.get_event_type_display()} - {self.campaign.name}"
+
+
+class CampaignSchedule(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pendiente'),
+        ('processing', 'En proceso'),
+        ('completed', 'Completado'),
+        ('cancelled', 'Cancelado'),
+        ('failed', 'Fallido'),
+    )
+    
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='schedules', verbose_name="Campaña")
+    scheduled_at = models.DateTimeField(verbose_name="Fecha y hora programada")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha real de ejecución")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Programación de Campaña"
+        verbose_name_plural = "Programaciones de Campaña"
+        ordering = ['scheduled_at']
+
+    def __str__(self):
+        return f"{self.campaign.name} - {self.scheduled_at.strftime('%d/%m/%Y %H:%M')} ({self.get_status_display()})"
+

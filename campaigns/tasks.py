@@ -18,6 +18,7 @@ except Exception:
 
 import resend
 
+from django.db.models import Q
 from .models import Campaign, CampaignLink, TrackingEvent
 from contacts.models import Contact
 from organizations.models import SuppressionEntry

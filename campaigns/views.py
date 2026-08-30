@@ -5,10 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.http import JsonResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.utils.safestring import mark_safe
 
-from .models import Campaign, CampaignLink, CampaignTemplate
+from .models import Campaign, CampaignLink, CampaignTemplate, CampaignSchedule
 from contacts.models import Segment, Tag, Contact
 from organizations.models import ActivityLog
 from .tasks import send_campaign_task
@@ -16,7 +17,7 @@ from .tasks import send_campaign_task
 @login_required
 def campaign_list(request):
     org = request.organization
-    campaigns = Campaign.objects.filter(organization=org).order_by('-created_at') if org else Campaign.objects.none()
+    campaigns = Campaign.objects.filter(organization=org).prefetch_related('schedules').order_by('-created_at') if org else Campaign.objects.none()
     return render(request, 'campaigns/list.html', {'campaigns': campaigns})
 
 @login_required
@@ -178,10 +179,20 @@ def campaign_editor(request, campaign_id):
     blocks_json = mark_safe(json.dumps(blocks))
     theme_json = mark_safe(json.dumps(theme))
     
+    # Programaciones pendientes existentes
+    existing_schedules = list(campaign.schedules.filter(status='pending').order_by('scheduled_at').values('scheduled_at'))
+    schedules_json = mark_safe(json.dumps([
+        {
+            'date': s['scheduled_at'].strftime('%Y-%m-%d'),
+            'time': s['scheduled_at'].strftime('%H:%M')
+        } for s in existing_schedules
+    ]))
+    
     return render(request, 'campaigns/editor.html', {
         'campaign': campaign,
         'blocks_json': blocks_json,
-        'theme_json': theme_json
+        'theme_json': theme_json,
+        'schedules_json': schedules_json
     })
 
 @login_required
@@ -222,7 +233,6 @@ def campaign_send(request, campaign_id):
     if request.method == 'POST':
         try:
             data = json.loads(request.body) if request.body else {}
-            scheduled_at_str = data.get('scheduled_at')
             is_test = data.get('is_test', False)
             test_email = data.get('test_email', '').strip()
             
@@ -237,29 +247,74 @@ def campaign_send(request, campaign_id):
                 )
                 return JsonResponse({'status': 'success', 'message': f'Correo de prueba enviado a {test_email}'})
                 
-            if scheduled_at_str:
-                campaign.scheduled_at = parse_datetime(scheduled_at_str)
+            schedules_list = data.get('schedules', [])
+            # Compatibilidad si envían scheduled_at individual
+            single_scheduled = data.get('scheduled_at')
+            if single_scheduled and not schedules_list:
+                schedules_list = [single_scheduled]
+                
+            # Filtrar y parsear fechas válidas
+            valid_datetimes = []
+            for dt_str in schedules_list:
+                if isinstance(dt_str, dict):
+                    d_val = dt_str.get('date')
+                    t_val = dt_str.get('time')
+                    if d_val and t_val:
+                        dt_str = f"{d_val}T{t_val}:00"
+                    elif d_val:
+                        dt_str = f"{d_val}T09:00:00"
+                    else:
+                        continue
+                        
+                if dt_str and isinstance(dt_str, str) and dt_str.strip():
+                    dt = parse_datetime(dt_str.strip())
+                    if dt:
+                        valid_datetimes.append(dt)
+                        
+            if valid_datetimes:
+                # Limpiar programaciones pendientes previas
+                CampaignSchedule.objects.filter(campaign=campaign, status='pending').delete()
+                
+                valid_datetimes.sort()
+                for dt in valid_datetimes:
+                    CampaignSchedule.objects.create(
+                        campaign=campaign,
+                        scheduled_at=dt,
+                        status='pending'
+                    )
+                    
+                campaign.scheduled_at = valid_datetimes[0]
                 campaign.status = 'scheduled'
-                campaign.save()
-                dispatch_campaign_task(campaign.id, eta=campaign.scheduled_at)
+                campaign.save(update_fields=['scheduled_at', 'status'])
+                
+                formatted_dates = ", ".join([dt.strftime('%d/%m/%Y %H:%M') for dt in valid_datetimes])
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
                     action="Programación de Campaña",
-                    details=f"Campaña '{campaign.name}' programada para {campaign.scheduled_at}."
+                    details=f"Campaña '{campaign.name}' programada para {len(valid_datetimes)} fecha(s): {formatted_dates}."
                 )
+                return JsonResponse({
+                    'status': 'success',
+                    'message': f'Campaña programada exitosamente para {len(valid_datetimes)} fecha(s).'
+                })
             else:
+                # Envío Inmediato
                 campaign.status = 'sending'
-                campaign.save()
+                campaign.sent_at = timezone.now()
+                campaign.save(update_fields=['status', 'sent_at'])
                 dispatch_campaign_task(campaign.id)
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
                     action="Despacho de Campaña",
-                    details=f"Campaña '{campaign.name}' enviada a la cola de despacho."
+                    details=f"Campaña '{campaign.name}' enviada a la cola de despacho inmediato."
                 )
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Campaña enviada de inmediato a todos los destinatarios.'
+                })
                 
-            return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
             

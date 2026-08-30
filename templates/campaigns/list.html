@@ -51,8 +51,17 @@
                         </td>
                         <td class="px-5 py-4 text-center">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if c.status == 'sent' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif c.status == 'scheduled' %}bg-amber-50 text-amber-800 border border-amber-200{% elif c.status == 'sending' %}bg-blue-50 text-brand-blue border border-blue-200 animate-pulse{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
-                                {{ c.get_status_display }}
+                                {% if c.status == 'scheduled' %}⏰ {% endif %}{{ c.get_status_display }}
                             </span>
+                            {% if c.schedules.all %}
+                            <div class="mt-1.5 flex flex-wrap gap-1 justify-center max-w-[200px] mx-auto">
+                                {% for sch in c.schedules.all %}
+                                <span class="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded border {% if sch.status == 'completed' %}bg-emerald-50 text-emerald-700 border-emerald-200{% elif sch.status == 'pending' %}bg-amber-50 text-amber-800 border-amber-300 font-semibold{% else %}bg-slate-50 text-slate-600 border-slate-200{% endif %}" title="Programado para {{ sch.scheduled_at|date:'d/m/Y H:i' }}">
+                                    {{ sch.scheduled_at|date:"d M H:i" }}{% if sch.status == 'completed' %} ✓{% endif %}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </td>
                         <td class="px-5 py-4 text-slate-500">
                             {{ c.created_at|date:"d M Y" }}

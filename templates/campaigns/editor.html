@@ -436,31 +436,74 @@
     <div x-show="showSendModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
         style="display: none;">
         <div @click.away="if(sendingState === 'idle') showSendModal = false"
-            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg border border-slate-200">
             <h3 class="text-xl font-bold text-brand-navy mb-1">Enviar Campaña</h3>
-            <p class="text-slate-500 text-xs mb-6">Puedes enviar la campaña inmediatamente a todos los destinatarios o programarla para una fecha y hora específica.</p>
+            <p class="text-slate-500 text-xs mb-5">Elige si deseas despachar de inmediato o programar una o varias fechas y horas de envío.</p>
 
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Programar Envío (Opcional)</label>
-                    <div class="flex gap-2">
-                        <input type="date" x-model="scheduledDate"
-                            class="flex-1 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-brand-blue focus:outline-none">
-                        <input type="time" x-model="scheduledTime"
-                            class="w-32 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2.5 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+            <!-- Selector de Modo de Envío -->
+            <div class="grid grid-cols-2 gap-3 mb-5">
+                <button type="button" @click="setSendMode('now')"
+                    :class="sendMode === 'now' ? 'border-brand-blue bg-blue-50/50 text-brand-blue font-bold shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'"
+                    class="border-2 rounded-xl p-3 text-left transition-all flex items-start space-x-2.5">
+                    <span class="text-lg">🚀</span>
+                    <div>
+                        <p class="text-xs font-bold">Enviar Ahora</p>
+                        <p class="text-[10px] text-slate-400 font-normal mt-0.5">Despacho inmediato a la audiencia</p>
                     </div>
-                    <p class="text-[11px] text-slate-400 mt-1">Si dejas esto en blanco, se enviará de inmediato.</p>
-                </div>
+                </button>
+
+                <button type="button" @click="setSendMode('scheduled')"
+                    :class="sendMode === 'scheduled' ? 'border-brand-blue bg-blue-50/50 text-brand-blue font-bold shadow-sm' : 'border-slate-200 hover:bg-slate-50 text-slate-600'"
+                    class="border-2 rounded-xl p-3 text-left transition-all flex items-start space-x-2.5">
+                    <span class="text-lg">⏰</span>
+                    <div>
+                        <p class="text-xs font-bold">Programar Envíos</p>
+                        <p class="text-[10px] text-slate-400 font-normal mt-0.5">Una o varias fechas y horas</p>
+                    </div>
+                </button>
             </div>
 
+            <!-- Sección Programación Múltiple -->
+            <div x-show="sendMode === 'scheduled'" class="space-y-3 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Fechas y Horas de Envío</label>
+                    <button type="button" @click="addScheduleRow"
+                        class="text-xs font-bold text-brand-blue hover:text-brand-navy flex items-center space-x-1">
+                        <span>➕</span>
+                        <span>Agregar otra fecha y hora</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2.5 max-h-52 overflow-y-auto pr-1">
+                    <template x-for="(sch, sIndex) in schedules" :key="sIndex">
+                        <div class="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm">
+                            <span class="text-[11px] font-bold text-slate-400 w-6 text-center" x-text="'#' + (sIndex + 1)"></span>
+                            <input type="date" x-model="sch.date"
+                                class="flex-1 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                            <input type="time" x-model="sch.time"
+                                class="w-28 bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                            <button type="button" @click="removeScheduleRow(sIndex)"
+                                class="text-red-500 hover:text-red-700 p-1.5 rounded-md hover:bg-red-50 transition-colors" title="Eliminar fecha">
+                                🗑️
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <p class="text-[11px] text-slate-400">
+                    💡 La campaña se enviará automáticamente en cada fecha programada a los contactos activos de la audiencia.
+                </p>
+            </div>
+
+            <!-- Botones de Acción -->
             <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button @click="showSendModal = false" :disabled="sendingState !== 'idle'"
                     class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
                 <button @click="sendCampaign" :disabled="sendingState !== 'idle'"
-                    class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-2">
-                    <span x-show="sendingState === 'idle'" x-text="scheduledDate ? 'Programar Envío' : 'Enviar Ahora'"></span>
-                    <span x-show="sendingState === 'sending'">Enviando...</span>
-                    <span x-show="sendingState === 'done'">¡Enviado!</span>
+                    class="px-5 py-2.5 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-2">
+                    <span x-show="sendingState === 'idle'" x-text="sendMode === 'scheduled' ? ('Guardar ' + schedules.length + ' Programación(es)') : '🚀 Enviar Ahora'"></span>
+                    <span x-show="sendingState === 'sending'">Procesando...</span>
+                    <span x-show="sendingState === 'done'">¡Listo!</span>
                     <span x-show="sendingState === 'error'">Error</span>
                 </button>
             </div>
@@ -506,9 +549,49 @@
             showTestModal: false,
             testEmail: '{{ user.email }}',
             testSending: false,
-            scheduledDate: '',
-            scheduledTime: '',
+            sendMode: '{{ schedules_json }}' !== '[]' ? 'scheduled' : 'now',
+            schedules: {{ schedules_json|default:"[]" }},
             sendingState: 'idle',
+
+            setSendMode(mode) {
+                this.sendMode = mode;
+                if (mode === 'scheduled' && this.schedules.length === 0) {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const yyyy = tomorrow.getFullYear();
+                    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                    const dd = String(tomorrow.getDate()).padStart(2, '0');
+                    this.schedules.push({ date: `${yyyy}-${mm}-${dd}`, time: '09:00' });
+                }
+            },
+
+            addScheduleRow() {
+                const last = this.schedules.length > 0 ? this.schedules[this.schedules.length - 1] : null;
+                let defaultDate = '';
+                if (last && last.date) {
+                    const nextDate = new Date(last.date);
+                    nextDate.setDate(nextDate.getDate() + 3);
+                    const yyyy = nextDate.getFullYear();
+                    const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(nextDate.getDate()).padStart(2, '0');
+                    defaultDate = `${yyyy}-${mm}-${dd}`;
+                } else {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const yyyy = tomorrow.getFullYear();
+                    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                    const dd = String(tomorrow.getDate()).padStart(2, '0');
+                    defaultDate = `${yyyy}-${mm}-${dd}`;
+                }
+                this.schedules.push({ date: defaultDate, time: '09:00' });
+            },
+
+            removeScheduleRow(index) {
+                this.schedules.splice(index, 1);
+                if (this.schedules.length === 0) {
+                    this.sendMode = 'now';
+                }
+            },
 
             // Aplicar Preset Armonioso
             applyPreset(headerBg, buttonBg, canvasBg = '#ffffff') {
@@ -716,6 +799,16 @@
             sendCampaign() {
                 this.sendingState = 'sending';
 
+                // Si está en modo programado, validar que todas las fechas tengan fecha
+                if (this.sendMode === 'scheduled') {
+                    const validSchedules = this.schedules.filter(s => s.date && s.date.trim());
+                    if (validSchedules.length === 0) {
+                        alert('Por favor ingresa al menos una fecha de envío válida.');
+                        this.sendingState = 'idle';
+                        return;
+                    }
+                }
+
                 fetch('', {
                     method: 'POST',
                     headers: {
@@ -730,9 +823,11 @@
                     .then(response => {
                         if (!response.ok) throw new Error("Error al guardar diseño.");
 
-                        let scheduledAt = null;
-                        if (this.scheduledDate && this.scheduledTime) {
-                            scheduledAt = `${this.scheduledDate}T${this.scheduledTime}:00`;
+                        const payload = {};
+                        if (this.sendMode === 'scheduled') {
+                            payload.schedules = this.schedules
+                                .filter(s => s.date && s.date.trim())
+                                .map(s => `${s.date}T${s.time || '09:00'}:00`);
                         }
 
                         return fetch('{% url "campaigns:send" campaign.id %}', {
@@ -741,7 +836,7 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRFToken': '{{ csrf_token }}'
                             },
-                            body: JSON.stringify({ scheduled_at: scheduledAt })
+                            body: JSON.stringify(payload)
                         });
                     })
                     .then(response => response.json())
@@ -750,7 +845,7 @@
                             this.sendingState = 'done';
                             setTimeout(() => {
                                 window.location.href = '{% url "campaigns:list" %}';
-                            }, 1200);
+                            }, 1000);
                         } else {
                             throw new Error(data.message || "Error al procesar envío.");
                         }
