@@ -1,0 +1,1195 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>Hummailing | Campañas de correo para emprendedores</title>
+    <meta name="description" content="Crea campañas profesionales y personalizadas, organiza tus contactos y descubre quién abrió, hizo clic o mostró interés con Hummailing. Una herramienta de Humm.">
+    <meta name="keywords" content="mailing para emprendedores, email marketing pymes, campañas de correo, hummailing, humm">
+    <link rel="canonical" href="https://mailing.humm.cl/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://mailing.humm.cl/">
+    <meta property="og:title" content="Hummailing | Campañas de correo para emprendedores">
+    <meta property="og:description" content="Crea campañas profesionales y personalizadas, organiza tus contactos y descubre quién abrió, hizo clic o mostró interés con Hummailing.">
+    <meta property="og:image" content="{% static 'img/logo.svg' %}">
+    <meta property="og:site_name" content="Hummailing">
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Hummailing | Campañas de correo para emprendedores">
+    <meta name="twitter:description" content="Crea campañas profesionales y personalizadas, organiza tus contactos y descubre quién abrió, hizo clic o mostró interés con Hummailing.">
+    <meta name="twitter:image" content="{% static 'img/logo.svg' %}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/logo.svg' %}">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols Outlined -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Tailwind Config with Exact Logo Colors & Plus Jakarta Sans -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            navy: '#173960',
+                            'navy-dark': '#0F243E',
+                            blue: '#0C6FAC',
+                            'blue-light': '#24A7DB',
+                            'blue-sky': '#7BC8EB',
+                            'blue-subtle': '#F0F7FB',
+                            orange: '#F59A29',
+                            'orange-hover': '#E08517',
+                            'orange-soft': '#FFF6EA',
+                            copper: '#D7955A',
+                            cream: '#EFEAE1',
+                            bg: '#F8FAFC',
+                            surface: '#FFFFFF',
+                            slate: '#334155',
+                            muted: '#64748B',
+                        }
+                    },
+                    borderRadius: {
+                        'brand': '8px',
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 10px rgba(23, 57, 96, 0.06)',
+                        'card': '0 4px 20px -2px rgba(23, 57, 96, 0.08)',
+                        'floating': '0 12px 32px -4px rgba(23, 57, 96, 0.12)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto !important;
+            }
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Hummailing",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "Herramienta simple de email marketing para emprendedores y pequeñas empresas que permite crear y enviar campañas de correo profesionales, organizar contactos y descubrir oportunidades comerciales.",
+      "url": "https://mailing.humm.cl",
+      "creator": {
+        "@type": "Organization",
+        "name": "Humm Co-Creation",
+        "url": "https://humm.cl"
+      }
+    }
+    </script>
+</head>
+<body class="bg-brand-bg text-slate-800 antialiased font-sans flex flex-col min-h-screen selection:bg-brand-orange/20 selection:text-brand-navy" x-data="{ mobileMenuOpen: false }">
+
+    <!-- ================================================================= -->
+    <!-- 1. NAVEGACIÓN SUPERIOR (STICKY)                                   -->
+    <!-- ================================================================= -->
+    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Logo Hummailing SVG -->
+                <div class="flex items-center">
+                    <a href="{% url 'landing' %}" class="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-brand-blue rounded-lg p-1" aria-label="Hummailing Inicio">
+                        <img src="{% static 'img/logo.svg' %}" alt="Hummailing" class="h-10 sm:h-11 w-auto" width="160" height="44">
+                    </a>
+                </div>
+
+                <!-- Menú de Navegación de Escritorio -->
+                <nav class="hidden md:flex items-center space-x-7" aria-label="Navegación principal">
+                    <a href="#como-funciona" class="text-sm font-semibold text-slate-600 hover:text-brand-navy transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue rounded-md px-1 py-0.5">Cómo funciona</a>
+                    <a href="#beneficios" class="text-sm font-semibold text-slate-600 hover:text-brand-navy transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue rounded-md px-1 py-0.5">Beneficios</a>
+                    <a href="#para-quien" class="text-sm font-semibold text-slate-600 hover:text-brand-navy transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue rounded-md px-1 py-0.5">Para quién es</a>
+                    <a href="#faq" class="text-sm font-semibold text-slate-600 hover:text-brand-navy transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue rounded-md px-1 py-0.5">Preguntas frecuentes</a>
+                </nav>
+
+                <!-- Botones de Acción de Escritorio -->
+                <div class="hidden md:flex items-center space-x-3">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="text-sm font-bold text-brand-navy hover:text-brand-blue px-3.5 py-2 rounded-brand transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue flex items-center gap-1.5" onclick="trackEvent('click_dashboard_header')">
+                            <span class="material-symbols-outlined text-lg">dashboard</span>
+                            <span>Ir a mi Panel</span>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="text-sm font-bold text-brand-navy hover:text-brand-blue px-3.5 py-2 rounded-brand transition-colors focus:outline-none focus:ring-2 focus:ring-brand-blue flex items-center gap-1.5" onclick="trackEvent('click_login_header')">
+                            <span class="material-symbols-outlined text-lg">login</span>
+                            <span>Ingresar</span>
+                        </a>
+                    {% endif %}
+
+                    <a href="#contacto" class="bg-brand-orange hover:bg-brand-orange-hover text-slate-950 font-extrabold text-sm px-4 py-2.5 rounded-brand shadow-sm hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange flex items-center gap-1.5" onclick="trackEvent('click_quiero_conocer_header')">
+                        <span>Quiero conocer Hummailing</span>
+                        <span class="material-symbols-outlined text-base font-bold">arrow_forward</span>
+                    </a>
+                </div>
+
+                <!-- Botón Hamburguesa Móvil -->
+                <div class="flex md:hidden items-center">
+                    <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" class="text-slate-700 hover:text-brand-navy p-2 rounded-brand focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="mobileMenuOpen" aria-label="Abrir menú de navegación">
+                        <span class="material-symbols-outlined text-3xl" x-text="mobileMenuOpen ? 'close' : 'menu'">menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menú Móvil Desplegable -->
+        <div x-show="mobileMenuOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" class="md:hidden border-b border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3" style="display: none;">
+            <a href="#como-funciona" @click="mobileMenuOpen = false" class="block text-base font-semibold text-slate-700 hover:text-brand-navy py-2 px-2 rounded-brand hover:bg-slate-50">Cómo funciona</a>
+            <a href="#beneficios" @click="mobileMenuOpen = false" class="block text-base font-semibold text-slate-700 hover:text-brand-navy py-2 px-2 rounded-brand hover:bg-slate-50">Beneficios</a>
+            <a href="#para-quien" @click="mobileMenuOpen = false" class="block text-base font-semibold text-slate-700 hover:text-brand-navy py-2 px-2 rounded-brand hover:bg-slate-50">Para quién es</a>
+            <a href="#faq" @click="mobileMenuOpen = false" class="block text-base font-semibold text-slate-700 hover:text-brand-navy py-2 px-2 rounded-brand hover:bg-slate-50">Preguntas frecuentes</a>
+            
+            <div class="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="w-full text-center text-sm font-bold text-brand-navy border border-slate-300 py-3 rounded-brand hover:bg-slate-50" onclick="trackEvent('click_dashboard_mobile')">
+                        Ir a mi Panel
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="w-full text-center text-sm font-bold text-brand-navy border border-slate-300 py-3 rounded-brand hover:bg-slate-50" onclick="trackEvent('click_login_mobile')">
+                        Ingresar a mi cuenta
+                    </a>
+                {% endif %}
+                <a href="#contacto" @click="mobileMenuOpen = false" class="w-full text-center bg-brand-orange hover:bg-brand-orange-hover text-slate-950 font-extrabold text-sm py-3.5 rounded-brand shadow-sm" onclick="trackEvent('click_quiero_conocer_mobile')">
+                    Quiero conocer Hummailing
+                </a>
+            </div>
+        </div>
+    </header>
+
+
+    <main id="contenido-principal" class="flex-grow">
+
+        <!-- ================================================================= -->
+        <!-- 2. HERO PRINCIPAL                                                 -->
+        <!-- ================================================================= -->
+        <section class="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden">
+            <!-- Fondo suave con gradiente sutil -->
+            <div class="absolute inset-0 bg-gradient-to-b from-brand-blue-subtle/50 via-white to-white -z-10 pointer-events-none"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                    
+                    <!-- Columna de Contenido (Móvil: primero) -->
+                    <div class="lg:col-span-6 space-y-6 text-left">
+                        
+                        <!-- Etiqueta superior -->
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100/80 text-amber-900 border border-amber-200">
+                            <span class="w-2 h-2 rounded-full bg-brand-orange animate-pulse"></span>
+                            <span>Una herramienta de Humm</span>
+                        </div>
+
+                        <!-- Título Principal H1 -->
+                        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-brand-navy tracking-tight leading-[1.15]">
+                            Convierte cada correo en una oportunidad.
+                        </h1>
+
+                        <!-- Texto Descriptivo -->
+                        <p class="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                            Crea campañas profesionales y personalizadas, organiza tus contactos y descubre quién abrió, hizo clic o mostró interés. Todo desde una herramienta simple, pensada para emprendedores.
+                        </p>
+
+                        <!-- Botones de Acción Hero -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+                            <a href="#contacto" class="inline-flex items-center justify-center gap-2 bg-brand-orange hover:bg-brand-orange-hover text-slate-950 font-extrabold text-base px-6 py-3.5 rounded-brand shadow-sm hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange text-center" onclick="trackEvent('click_hero_quiero_usar')">
+                                <span>Quiero usar Hummailing</span>
+                                <span class="material-symbols-outlined font-bold text-lg">arrow_forward</span>
+                            </a>
+                            <a href="#como-funciona" class="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-brand-navy font-bold text-base px-6 py-3.5 rounded-brand border border-slate-300 shadow-2xs hover:border-slate-400 transition-all text-center focus:outline-none focus:ring-2 focus:ring-brand-blue" onclick="trackEvent('click_hero_como_funciona')">
+                                <span class="material-symbols-outlined text-brand-blue text-lg">play_circle</span>
+                                <span>Ver cómo funciona</span>
+                            </a>
+                        </div>
+
+                        <!-- Texto breve de confianza -->
+                        <div class="flex items-center gap-2 pt-2 text-xs text-slate-500 font-medium">
+                            <span class="material-symbols-outlined text-emerald-600 text-base font-bold">check_circle</span>
+                            <span>Sin conocimientos de diseño ni herramientas complicadas.</span>
+                        </div>
+                    </div>
+
+                    <!-- Columna Visual: Mockup Realista de Hummailing -->
+                    <div class="lg:col-span-6">
+                        <div class="relative mx-auto max-w-lg lg:max-w-none">
+                            
+                            <!-- Contenedor del Mockup con Estilo de Ventana Web SaaS -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-floating overflow-hidden">
+                                
+                                <!-- Barra superior de la ventana -->
+                                <div class="bg-slate-100 border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+                                    <div class="flex items-center space-x-1.5">
+                                        <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                                        <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                                        <div class="w-3 h-3 rounded-full bg-slate-300"></div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white border border-slate-200 text-xs font-semibold text-slate-600">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        <span>Hummailing &bull; Campaña en preparación</span>
+                                    </div>
+                                    <div class="text-slate-400">
+                                        <span class="material-symbols-outlined text-base">more_horiz</span>
+                                    </div>
+                                </div>
+
+                                <!-- Cuerpo del Mockup -->
+                                <div class="p-5 sm:p-6 bg-slate-50/50 space-y-4">
+                                    
+                                    <!-- Header de Campaña y Asunto -->
+                                    <div class="bg-white p-4 rounded-brand border border-slate-200 shadow-2xs space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[11px] font-bold uppercase tracking-wider text-brand-blue">Campaña de Lanzamiento</span>
+                                            <span class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">Lista para envío</span>
+                                        </div>
+                                        <div class="text-sm font-bold text-slate-900">
+                                            Asunto: ✨ Novedades y promociones especiales del mes
+                                        </div>
+                                        <div class="text-xs text-slate-500 flex items-center gap-2">
+                                            <span>De: <strong>Mi Emprendimiento</strong> &lt;hola@miempresa.cl&gt;</span>
+                                            <span>&bull;</span>
+                                            <span class="text-brand-navy font-semibold">Grupo: Clientes Frecuentes</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Vista previa de contenido del correo -->
+                                    <div class="bg-white p-4 rounded-brand border border-slate-200 space-y-3">
+                                        <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                                            <div class="w-7 h-7 rounded-full bg-brand-blue/10 flex items-center justify-center text-brand-blue text-xs font-bold">
+                                                H
+                                            </div>
+                                            <div>
+                                                <div class="text-xs font-bold text-slate-800">¡Hola <span class="text-brand-blue bg-blue-50 px-1 py-0.2 rounded font-mono">{% verbatim %}{{ nombre }}{% endverbatim %}</span>!</div>
+                                                <div class="text-[10px] text-slate-400">Mensaje personalizado automáticamente</div>
+                                            </div>
+                                        </div>
+                                        <p class="text-xs text-slate-600 leading-relaxed">
+                                            Tenemos disponibles nuestros nuevos servicios y promociones de la temporada. Haz clic a continuación para ver todos los detalles.
+                                        </p>
+                                        <!-- Botón de acción simulado en el correo -->
+                                        <div class="pt-1 text-center">
+                                            <span class="inline-block bg-brand-navy text-white text-xs font-bold px-4 py-2 rounded-brand shadow-xs">
+                                                Ver catálogo y promociones &rarr;
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Panel de Resultados / Interés Realista -->
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                                        <div class="bg-white p-2.5 rounded-brand border border-slate-200 text-center">
+                                            <div class="text-[10px] font-bold text-slate-500 uppercase">Enviados</div>
+                                            <div class="text-lg font-black text-brand-navy mt-0.5">248</div>
+                                            <div class="text-[9px] text-emerald-600 font-semibold">100% entregados</div>
+                                        </div>
+                                        <div class="bg-white p-2.5 rounded-brand border border-slate-200 text-center">
+                                            <div class="text-[10px] font-bold text-brand-blue uppercase">Aperturas</div>
+                                            <div class="text-lg font-black text-brand-blue mt-0.5">158</div>
+                                            <div class="text-[9px] text-brand-blue font-semibold">64% tasa</div>
+                                        </div>
+                                        <div class="bg-white p-2.5 rounded-brand border border-slate-200 text-center">
+                                            <div class="text-[10px] font-bold text-cyan-700 uppercase">Clics</div>
+                                            <div class="text-lg font-black text-cyan-700 mt-0.5">32</div>
+                                            <div class="text-[9px] text-cyan-600 font-semibold">Interés activo</div>
+                                        </div>
+                                        <div class="bg-amber-50 p-2.5 rounded-brand border border-amber-200 text-center">
+                                            <div class="text-[10px] font-bold text-amber-900 uppercase">Interesados</div>
+                                            <div class="text-lg font-black text-brand-orange mt-0.5">8</div>
+                                            <div class="text-[9px] text-amber-800 font-semibold">Oportunidades</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lista de Personas Interesadas (Identificación de leads) -->
+                                    <div class="bg-white p-3 rounded-brand border border-slate-200 space-y-2">
+                                        <div class="text-xs font-bold text-brand-navy flex items-center justify-between">
+                                            <span>🎯 Personas que hicieron clic recientemente</span>
+                                            <span class="text-[10px] text-slate-400">Seguimiento sugerido</span>
+                                        </div>
+                                        <div class="space-y-1.5 text-xs">
+                                            <div class="flex items-center justify-between p-1.5 bg-slate-50 rounded">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                    <span class="font-semibold text-slate-800">Camila Soto</span>
+                                                    <span class="text-slate-400 text-[11px]">&bull; Clic en "Catálogo"</span>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-brand-blue">Hace 15 min</span>
+                                            </div>
+                                            <div class="flex items-center justify-between p-1.5 bg-slate-50 rounded">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                    <span class="font-semibold text-slate-800">Jorge Valenzuela</span>
+                                                    <span class="text-slate-400 text-[11px]">&bull; Clic en "Consultar WhatsApp"</span>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-brand-blue">Hace 1 h</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 3. SECCIÓN DEL PROBLEMA                                           -->
+        <!-- ================================================================= -->
+        <section class="py-16 sm:py-20 bg-slate-50 border-y border-slate-200/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Encabezado de la sección -->
+                <div class="max-w-3xl mx-auto text-center space-y-4 mb-12 sm:mb-16">
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-brand-navy tracking-tight">
+                        Tener contactos no sirve si no sabes cómo comunicarte con ellos.
+                    </h2>
+                    <p class="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                        Muchos emprendimientos acumulan clientes en WhatsApp, redes sociales, planillas o agendas, pero no cuentan con una forma simple de mantener el contacto, presentar nuevas ofertas o saber quién está realmente interesado.
+                    </p>
+                </div>
+
+                <!-- 3 Tarjetas del Problema -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                    
+                    <!-- Tarjeta 1: Contactos desordenados -->
+                    <div class="bg-white p-7 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-12 h-12 rounded-brand bg-red-50 text-red-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">folder_off</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">
+                            Contactos desordenados
+                        </h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Los datos de tus clientes quedan repartidos entre distintas herramientas.
+                        </p>
+                    </div>
+
+                    <!-- Tarjeta 2: Mensajes que se pierden -->
+                    <div class="bg-white p-7 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-12 h-12 rounded-brand bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">mark_email_unread</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">
+                            Mensajes que se pierden
+                        </h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Publicas o envías información, pero no sabes quién la recibió o mostró interés.
+                        </p>
+                    </div>
+
+                    <!-- Tarjeta 3: Oportunidades sin seguimiento -->
+                    <div class="bg-white p-7 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-12 h-12 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">person_search</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">
+                            Oportunidades sin seguimiento
+                        </h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Una persona hace clic o consulta, pero su interés no queda registrado.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 4. SECCIÓN CÓMO FUNCIONA                                          -->
+        <!-- ================================================================= -->
+        <section id="como-funciona" class="py-16 sm:py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Paso a paso</span>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight">
+                        De tus contactos a nuevas oportunidades
+                    </h2>
+                    <p class="text-base text-slate-600">
+                        Un proceso claro y guiado para comunicarte con tus clientes en cuatro momentos clave:
+                    </p>
+                </div>
+
+                <!-- 4 Pasos en Grid (Vertical en móvil, Horizontal en Desktop) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Paso 1 -->
+                    <div class="relative bg-brand-bg p-6 rounded-brand border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="w-9 h-9 rounded-full bg-brand-navy text-white font-extrabold text-sm flex items-center justify-center">1</span>
+                                <span class="material-symbols-outlined text-brand-blue text-2xl">group_add</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Organiza tus contactos</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                Importa tu base, agrega etiquetas y crea grupos según tus necesidades.
+                            </p>
+                        </div>
+                        <div class="pt-2 text-xs font-semibold text-brand-blue">
+                            Carga rápida &bull; Etiquetas
+                        </div>
+                    </div>
+
+                    <!-- Paso 2 -->
+                    <div class="relative bg-brand-bg p-6 rounded-brand border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="w-9 h-9 rounded-full bg-brand-navy text-white font-extrabold text-sm flex items-center justify-center">2</span>
+                                <span class="material-symbols-outlined text-brand-blue text-2xl">edit_note</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Prepara tu campaña</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                Utiliza bloques simples para incorporar textos, imágenes, botones y tus datos de contacto.
+                            </p>
+                        </div>
+                        <div class="pt-2 text-xs font-semibold text-brand-blue">
+                            Editor visual sin código
+                        </div>
+                    </div>
+
+                    <!-- Paso 3 -->
+                    <div class="relative bg-brand-bg p-6 rounded-brand border border-slate-200 flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="w-9 h-9 rounded-full bg-brand-navy text-white font-extrabold text-sm flex items-center justify-center">3</span>
+                                <span class="material-symbols-outlined text-brand-blue text-2xl">send_and_archive</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Envía o programa</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                Envía una prueba, revisa el resultado y programa tu campaña para el momento adecuado.
+                            </p>
+                        </div>
+                        <div class="pt-2 text-xs font-semibold text-brand-blue">
+                            Prueba previa &bull; Envíos seguros
+                        </div>
+                    </div>
+
+                    <!-- Paso 4 -->
+                    <div class="relative bg-amber-50/50 p-6 rounded-brand border border-amber-200 flex flex-col justify-between space-y-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="w-9 h-9 rounded-full bg-brand-orange text-slate-950 font-black text-sm flex items-center justify-center">4</span>
+                                <span class="material-symbols-outlined text-brand-orange text-2xl">insights</span>
+                            </div>
+                            <h3 class="text-base font-bold text-slate-900 mb-2">Descubre quién se interesó</h3>
+                            <p class="text-sm text-slate-600 leading-relaxed">
+                                Revisa aperturas, clics y personas que demostraron interés en tu oferta.
+                            </p>
+                        </div>
+                        <div class="pt-2 text-xs font-semibold text-amber-800">
+                            Métricas &bull; Seguimiento
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 5. BENEFICIOS PRINCIPALES                                         -->
+        <!-- ================================================================= -->
+        <section id="beneficios" class="py-16 sm:py-24 bg-slate-50 border-t border-slate-200/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Beneficios clave</span>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight">
+                        Todo lo necesario para comunicarte mejor
+                    </h2>
+                    <p class="text-base text-slate-600">
+                        Herramientas concretas para ahorrar tiempo y profesionalizar la comunicación de tu negocio:
+                    </p>
+                </div>
+
+                <!-- Cuadrícula de 6 Beneficios -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Beneficio 1 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">devices</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Campañas profesionales</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Diseña correos atractivos y adaptados a dispositivos móviles.
+                        </p>
+                    </div>
+
+                    <!-- Beneficio 2 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">person</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Mensajes personalizados</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Saluda a cada contacto por su nombre y adapta el contenido.
+                        </p>
+                    </div>
+
+                    <!-- Beneficio 3 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">label</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Contactos organizados</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Utiliza etiquetas y segmentos para enviar el mensaje correcto.
+                        </p>
+                    </div>
+
+                    <!-- Beneficio 4 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">query_stats</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Resultados comprensibles</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Conoce entregas, aperturas, clics, rebotes y desuscripciones.
+                        </p>
+                    </div>
+
+                    <!-- Beneficio 5 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-amber-50 text-brand-orange flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">touch_app</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Personas interesadas</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Identifica quién hizo clic en tus productos, servicios o actividades.
+                        </p>
+                    </div>
+
+                    <!-- Beneficio 6 -->
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-xl">conversion_path</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Nuevas oportunidades</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            Convierte las acciones relevantes de tus contactos en oportunidades para realizar seguimiento.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 6. SECCIÓN DE DIFERENCIACIÓN                                      -->
+        <!-- ================================================================= -->
+        <section class="py-16 sm:py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="bg-brand-navy rounded-2xl text-white p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-card">
+                    <!-- Detalle decorativo sutil -->
+                    <div class="absolute -right-16 -top-16 w-64 h-64 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="max-w-3xl space-y-6 relative z-10">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold bg-white/10 text-brand-blue-sky border border-white/15">
+                            Diseñado para pequeños negocios
+                        </div>
+
+                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                            Una herramienta pensada para emprendedores, no para especialistas
+                        </h2>
+
+                        <p class="text-base sm:text-lg text-slate-300 leading-relaxed">
+                            Hummailing simplifica la creación de campañas para que puedas concentrarte en tu negocio. No necesitas conocer de programación, diseño de correos ni métricas complejas.
+                        </p>
+
+                        <!-- 3 Mensajes Pilares -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                            <div class="p-4 rounded-brand bg-white/5 border border-white/10 flex items-start gap-3">
+                                <span class="material-symbols-outlined text-brand-orange text-xl mt-0.5">translate</span>
+                                <span class="text-sm font-semibold text-white">Interfaz clara y en español</span>
+                            </div>
+                            <div class="p-4 rounded-brand bg-white/5 border border-white/10 flex items-start gap-3">
+                                <span class="material-symbols-outlined text-brand-blue-sky text-xl mt-0.5">dashboard_customize</span>
+                                <span class="text-sm font-semibold text-white">Plantillas fáciles de personalizar</span>
+                            </div>
+                            <div class="p-4 rounded-brand bg-white/5 border border-white/10 flex items-start gap-3">
+                                <span class="material-symbols-outlined text-emerald-400 text-xl mt-0.5">handshake</span>
+                                <span class="text-sm font-semibold text-white">Acompañamiento del ecosistema Humm</span>
+                            </div>
+                        </div>
+
+                        <!-- Sello Humm Co-Creation -->
+                        <div class="pt-6 border-t border-white/10 flex items-center justify-between flex-wrap gap-4">
+                            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white/10 border border-white/20 text-xs font-bold text-amber-300">
+                                <span>✦</span>
+                                <span>Desarrollado por Humm Co-Creation</span>
+                            </div>
+                            <a href="#contacto" class="text-xs font-bold text-white hover:text-brand-orange transition-colors flex items-center gap-1">
+                                Solicitar acceso a la plataforma &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 7. CASOS DE USO                                                   -->
+        <!-- ================================================================= -->
+        <section id="para-quien" class="py-16 sm:py-24 bg-slate-50 border-t border-slate-200/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-16 space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Casos de uso reales</span>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight">
+                        Úsalo para mantener activo tu negocio
+                    </h2>
+                    <p class="text-base text-slate-600">
+                        Adaptado a pequeños negocios, servicios, turismo, gastronomía, artesanía, formación y emprendimientos locales:
+                    </p>
+                </div>
+
+                <!-- 4 Ejemplos -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-blue-50 text-brand-blue flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">campaign</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Promocionar productos o servicios</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Informa lanzamientos, nueva disponibilidad de stock, servicios de temporada o catálogos actualizados.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-amber-50 text-brand-orange flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">local_offer</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Comunicar ofertas y novedades</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Envía beneficios exclusivos, descuentos por tiempo limitado y novedades directas a tu comunidad.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-cyan-50 text-cyan-700 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">event</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Invitar a talleres o actividades</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Convoca a cursos, talleres, ferias locales o inauguraciones con botón directo de inscripción.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-brand border border-slate-200 shadow-soft space-y-3">
+                        <div class="w-10 h-10 rounded-brand bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">replay</span>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-900">Volver a contactar antiguos clientes</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Reconecta con personas que no te compraban hace tiempo mediante mensajes cercanos y personalizados.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 8. SECCIÓN DE RESULTADOS                                          -->
+        <!-- ================================================================= -->
+        <section class="py-16 sm:py-24 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="max-w-3xl mx-auto text-center space-y-4 mb-14">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Visibilidad comercial</span>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight">
+                        No solo envíes correos. Aprende de cada campaña.
+                    </h2>
+                    <p class="text-base sm:text-lg text-slate-600 leading-relaxed">
+                        Hummailing te muestra qué ocurrió después del envío para que puedas mejorar tus mensajes y concentrarte en las personas que demostraron interés.
+                    </p>
+                </div>
+
+                <!-- Flujo Visual Simple de Embudo -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 sm:p-10 max-w-5xl mx-auto">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-500 text-center mb-6">
+                        El ciclo de oportunidad de Hummailing
+                    </div>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 items-center text-center">
+                        
+                        <!-- Paso 1 -->
+                        <div class="bg-white p-4 rounded-brand border border-slate-200 shadow-2xs">
+                            <span class="material-symbols-outlined text-brand-blue text-2xl mb-1">contacts</span>
+                            <div class="text-xs font-bold text-slate-800">Contactos</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Base organizada</div>
+                        </div>
+
+                        <!-- Paso 2 -->
+                        <div class="bg-white p-4 rounded-brand border border-slate-200 shadow-2xs">
+                            <span class="material-symbols-outlined text-brand-blue text-2xl mb-1">outgoing_mail</span>
+                            <div class="text-xs font-bold text-slate-800">Correos enviados</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Entrega profesional</div>
+                        </div>
+
+                        <!-- Paso 3 -->
+                        <div class="bg-white p-4 rounded-brand border border-slate-200 shadow-2xs">
+                            <span class="material-symbols-outlined text-brand-blue text-2xl mb-1">visibility</span>
+                            <div class="text-xs font-bold text-slate-800">Aperturas</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Quién leyó</div>
+                        </div>
+
+                        <!-- Paso 4 -->
+                        <div class="bg-white p-4 rounded-brand border border-slate-200 shadow-2xs">
+                            <span class="material-symbols-outlined text-cyan-700 text-2xl mb-1">ads_click</span>
+                            <div class="text-xs font-bold text-slate-800">Clics</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Enlaces activos</div>
+                        </div>
+
+                        <!-- Paso 5 (Destacado) -->
+                        <div class="col-span-2 sm:col-span-1 bg-amber-50 p-4 rounded-brand border-2 border-brand-orange shadow-soft">
+                            <span class="material-symbols-outlined text-brand-orange text-2xl mb-1">target</span>
+                            <div class="text-xs font-extrabold text-amber-950">Personas interesadas</div>
+                            <div class="text-[10px] text-amber-800 font-semibold mt-0.5">Oportunidad de venta</div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-6 text-center text-xs text-slate-500 max-w-xl mx-auto">
+                        Hummailing no promete ventas mágicas: te entrega la información exacta para saber a quién contactar y cuándo hacer seguimiento.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 9. PREGUNTAS FRECUENTES (FAQ)                                     -->
+        <!-- ================================================================= -->
+        <section id="faq" class="py-16 sm:py-24 bg-slate-50 border-t border-slate-200/80" x-data="{ openFaq: null }">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center space-y-3 mb-14">
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Respuestas rápidas</span>
+                    <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight">
+                        Preguntas frecuentes
+                    </h2>
+                    <p class="text-base text-slate-600">
+                        Todo lo que necesitas saber antes de empezar a usar Hummailing:
+                    </p>
+                </div>
+
+                <!-- Acordeón de 5 Preguntas -->
+                <div class="space-y-3.5">
+                    
+                    <!-- FAQ 1 -->
+                    <div class="bg-white rounded-brand border border-slate-200 overflow-hidden shadow-2xs">
+                        <button type="button" @click="openFaq = (openFaq === 1 ? null : 1)" class="w-full px-6 py-4.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="openFaq === 1">
+                            <span class="font-bold text-slate-900 text-sm sm:text-base">¿Necesito saber diseño o programación?</span>
+                            <span class="material-symbols-outlined text-slate-400 transition-transform duration-200" :class="{ 'rotate-180 text-brand-blue': openFaq === 1 }">expand_more</span>
+                        </button>
+                        <div x-show="openFaq === 1" x-collapse style="display: none;" class="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                            No. Hummailing utiliza plantillas y bloques simples para crear tus campañas.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 2 -->
+                    <div class="bg-white rounded-brand border border-slate-200 overflow-hidden shadow-2xs">
+                        <button type="button" @click="openFaq = (openFaq === 2 ? null : 2)" class="w-full px-6 py-4.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="openFaq === 2">
+                            <span class="font-bold text-slate-900 text-sm sm:text-base">¿Puedo importar mis contactos?</span>
+                            <span class="material-symbols-outlined text-slate-400 transition-transform duration-200" :class="{ 'rotate-180 text-brand-blue': openFaq === 2 }">expand_more</span>
+                        </button>
+                        <div x-show="openFaq === 2" x-collapse style="display: none;" class="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                            Sí. Puedes organizar e importar tus contactos para luego agruparlos mediante etiquetas y segmentos.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 3 -->
+                    <div class="bg-white rounded-brand border border-slate-200 overflow-hidden shadow-2xs">
+                        <button type="button" @click="openFaq = (openFaq === 3 ? null : 3)" class="w-full px-6 py-4.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="openFaq === 3">
+                            <span class="font-bold text-slate-900 text-sm sm:text-base">¿Puedo saber quién abrió o hizo clic?</span>
+                            <span class="material-symbols-outlined text-slate-400 transition-transform duration-200" :class="{ 'rotate-180 text-brand-blue': openFaq === 3 }">expand_more</span>
+                        </button>
+                        <div x-show="openFaq === 3" x-collapse style="display: none;" class="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                            Sí. Podrás revisar aperturas aproximadas, clics y otras interacciones de cada campaña.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 4 -->
+                    <div class="bg-white rounded-brand border border-slate-200 overflow-hidden shadow-2xs">
+                        <button type="button" @click="openFaq = (openFaq === 4 ? null : 4)" class="w-full px-6 py-4.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="openFaq === 4">
+                            <span class="font-bold text-slate-900 text-sm sm:text-base">¿Los correos se adaptan a teléfonos móviles?</span>
+                            <span class="material-symbols-outlined text-slate-400 transition-transform duration-200" :class="{ 'rotate-180 text-brand-blue': openFaq === 4 }">expand_more</span>
+                        </button>
+                        <div x-show="openFaq === 4" x-collapse style="display: none;" class="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                            Sí. Las campañas se diseñan para verse correctamente en computadores y dispositivos móviles.
+                        </div>
+                    </div>
+
+                    <!-- FAQ 5 -->
+                    <div class="bg-white rounded-brand border border-slate-200 overflow-hidden shadow-2xs">
+                        <button type="button" @click="openFaq = (openFaq === 5 ? null : 5)" class="w-full px-6 py-4.5 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-brand-blue" :aria-expanded="openFaq === 5">
+                            <span class="font-bold text-slate-900 text-sm sm:text-base">¿Cómo puedo acceder a Hummailing?</span>
+                            <span class="material-symbols-outlined text-slate-400 transition-transform duration-200" :class="{ 'rotate-180 text-brand-blue': openFaq === 5 }">expand_more</span>
+                        </button>
+                        <div x-show="openFaq === 5" x-collapse style="display: none;" class="px-6 pb-5 pt-1 text-sm text-slate-600 leading-relaxed border-t border-slate-100">
+                            Solicita información mediante el formulario y el equipo de Humm se pondrá en contacto contigo.
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================================================================= -->
+        <!-- 10. CTA FINAL & FORMULARIO DE CAPTACIÓN                           -->
+        <!-- ================================================================= -->
+        <section id="contacto" class="py-16 sm:py-24 bg-white relative" x-data="leadFormHandler()">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- Frase Breve Pre-Formulario (CTA Final) -->
+                <div class="text-center mb-8">
+                    <p class="text-sm font-extrabold uppercase tracking-widest text-brand-blue">
+                        Tus contactos ya existen. Hummailing te ayuda a volver a conversar con ellos.
+                    </p>
+                </div>
+
+                <!-- Tarjeta Principal del Formulario -->
+                <div class="bg-white border-2 border-slate-200 rounded-2xl p-6 sm:p-10 shadow-card">
+                    
+                    <div class="text-center max-w-2xl mx-auto mb-8 space-y-2">
+                        <h2 class="text-2xl sm:text-3xl font-black text-brand-navy tracking-tight">
+                            Empieza a convertir tus contactos en oportunidades
+                        </h2>
+                        <p class="text-sm sm:text-base text-slate-600">
+                            Cuéntanos sobre tu emprendimiento y te mostraremos cómo Hummailing puede ayudarte a crear tus primeras campañas.
+                        </p>
+                    </div>
+
+                    <!-- Mensaje de Éxito Dinámico -->
+                    <div x-show="submitted" x-transition class="p-6 bg-emerald-50 border border-emerald-200 rounded-brand text-center space-y-3" style="display: none;">
+                        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center">
+                            <span class="material-symbols-outlined text-3xl">check_circle</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-emerald-900">¡Mensaje recibido con éxito!</h3>
+                        <p class="text-sm text-emerald-800 font-medium" x-text="successMessage">
+                            Gracias por tu interés. El equipo de Humm se pondrá en contacto contigo.
+                        </p>
+                    </div>
+
+                    <!-- Mensajes Flash de Django (Fallback POST tradicional) -->
+                    {% if messages %}
+                        <div class="mb-6 space-y-2">
+                            {% for message in messages %}
+                            <div class="p-4 rounded-brand text-xs font-semibold border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% else %}bg-emerald-50 border-emerald-200 text-emerald-800{% endif %}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Formulario de Captación -->
+                    <form x-show="!submitted" @submit.prevent="submitForm" method="post" action="{% url 'capture_lead' %}" class="space-y-5" id="lead-capture-form">
+                        {% csrf_token %}
+                        
+                        <!-- Campo Honeypot Oculto Anti-Spam -->
+                        <div style="display:none !important;" aria-hidden="true">
+                            <label for="website_hp">No llenar este campo:</label>
+                            <input type="text" id="website_hp" name="website_hp" x-model="formData.website_hp" tabindex="-1" autocomplete="off">
+                        </div>
+
+                        <!-- Parámetros UTM Ocultos -->
+                        <input type="hidden" name="utm_source" value="{{ utm_source }}">
+                        <input type="hidden" name="utm_medium" value="{{ utm_medium }}">
+                        <input type="hidden" name="utm_campaign" value="{{ utm_campaign }}">
+                        <input type="hidden" name="utm_term" value="{{ utm_term }}">
+                        <input type="hidden" name="utm_content" value="{{ utm_content }}">
+
+                        <!-- Grid de Campos -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            
+                            <!-- Nombre -->
+                            <div>
+                                <label for="field-name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Nombre completo <span class="text-brand-orange">*</span>
+                                </label>
+                                <input type="text" id="field-name" name="name" required x-model="formData.name" @focus="trackFormStart" placeholder="ej. Andrea González" class="w-full bg-slate-50 border border-slate-300 rounded-brand px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all" :class="{'border-red-400 ring-1 ring-red-400': errors.name}">
+                                <template x-if="errors.name">
+                                    <p class="text-xs text-red-600 mt-1" x-text="errors.name"></p>
+                                </template>
+                            </div>
+
+                            <!-- Emprendimiento o Empresa -->
+                            <div>
+                                <label for="field-company" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Emprendimiento o empresa <span class="text-brand-orange">*</span>
+                                </label>
+                                <input type="text" id="field-company" name="company_name" required x-model="formData.company_name" placeholder="ej. Taller Artesanal Nativo" class="w-full bg-slate-50 border border-slate-300 rounded-brand px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all" :class="{'border-red-400 ring-1 ring-red-400': errors.company_name}">
+                                <template x-if="errors.company_name">
+                                    <p class="text-xs text-red-600 mt-1" x-text="errors.company_name"></p>
+                                </template>
+                            </div>
+
+                            <!-- Correo Electrónico -->
+                            <div>
+                                <label for="field-email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Correo electrónico <span class="text-brand-orange">*</span>
+                                </label>
+                                <input type="email" id="field-email" name="email" required x-model="formData.email" placeholder="andrea@miempresa.cl" class="w-full bg-slate-50 border border-slate-300 rounded-brand px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all" :class="{'border-red-400 ring-1 ring-red-400': errors.email}">
+                                <template x-if="errors.email">
+                                    <p class="text-xs text-red-600 mt-1" x-text="errors.email"></p>
+                                </template>
+                            </div>
+
+                            <!-- Teléfono o WhatsApp -->
+                            <div>
+                                <label for="field-phone" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                    Teléfono o WhatsApp <span class="text-brand-orange">*</span>
+                                </label>
+                                <input type="tel" id="field-phone" name="phone" required x-model="formData.phone" placeholder="+56 9 1234 5678" class="w-full bg-slate-50 border border-slate-300 rounded-brand px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all" :class="{'border-red-400 ring-1 ring-red-400': errors.phone}">
+                                <template x-if="errors.phone">
+                                    <p class="text-xs text-red-600 mt-1" x-text="errors.phone"></p>
+                                </template>
+                            </div>
+
+                        </div>
+
+                        <!-- Mensaje Opcional -->
+                        <div>
+                            <label for="field-message" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                                Mensaje opcional <span class="text-slate-400 font-normal lowercase">(¿qué te gustaría comunicar?)</span>
+                            </label>
+                            <textarea id="field-message" name="message" rows="3" x-model="formData.message" placeholder="Cuéntanos brevemente sobre tus clientes o qué tipo de campañas te interesa enviar..." class="w-full bg-slate-50 border border-slate-300 rounded-brand px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all"></textarea>
+                        </div>
+
+                        <!-- Casilla de Aceptación de Privacidad -->
+                        <div class="flex items-start gap-2.5 pt-1">
+                            <input type="checkbox" id="field-privacy" name="privacy_policy" required x-model="formData.privacy_policy" class="mt-1 w-4 h-4 text-brand-orange border-slate-300 rounded focus:ring-brand-blue">
+                            <label for="field-privacy" class="text-xs text-slate-600">
+                                Acepto que el equipo de Humm me contacte para presentarme la herramienta y coordinar el acceso. <span class="text-slate-400">Tus datos no serán compartidos con terceros.</span>
+                            </label>
+                        </div>
+                        <template x-if="errors.privacy_policy">
+                            <p class="text-xs text-red-600" x-text="errors.privacy_policy"></p>
+                        </template>
+
+                        <!-- Botón de Envío -->
+                        <div class="pt-3">
+                            <button type="submit" :disabled="loading" class="w-full bg-brand-orange hover:bg-brand-orange-hover text-slate-950 font-extrabold text-base py-3.5 px-6 rounded-brand shadow-sm hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed">
+                                <template x-if="!loading">
+                                    <span class="flex items-center gap-2">
+                                        <span>Quiero conocer Hummailing</span>
+                                        <span class="material-symbols-outlined font-bold text-lg">send</span>
+                                    </span>
+                                </template>
+                                <template x-if="loading">
+                                    <span class="flex items-center gap-2">
+                                        <svg class="animate-spin h-5 w-5 text-slate-950" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                        </svg>
+                                        <span>Enviando información...</span>
+                                    </span>
+                                </template>
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ================================================================= -->
+    <!-- 11. FOOTER                                                        -->
+    <!-- ================================================================= -->
+    <footer class="bg-white border-t border-slate-200 py-12 text-slate-600 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 border-b border-slate-100">
+                
+                <!-- Logo & Subtexto -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <img src="{% static 'img/logo.svg' %}" alt="Hummailing" class="h-9 w-auto" width="130" height="36">
+                    <div class="sm:border-l sm:border-slate-200 sm:pl-4 text-slate-500 font-medium">
+                        Una herramienta de <strong>Humm Co-Creation</strong>
+                    </div>
+                </div>
+
+                <!-- Enlaces Rápidos del Footer -->
+                <div class="flex flex-wrap justify-center items-center gap-6 font-semibold text-slate-600">
+                    <a href="https://humm.cl" target="_blank" rel="noopener noreferrer" class="hover:text-brand-navy transition-colors">Sitio de Humm &nearr;</a>
+                    <a href="#contacto" class="hover:text-brand-navy transition-colors">Contacto</a>
+                    <a href="{% url 'login' %}" class="text-brand-blue hover:text-brand-navy font-bold transition-colors">Acceso a usuarios</a>
+                </div>
+
+            </div>
+
+            <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-center sm:text-left">
+                <p>&copy; {{ current_year }} Hummailing &bull; Desarrollado por Humm Co-Creation. Todos los derechos reservados.</p>
+                <div class="flex items-center gap-4 text-slate-400">
+                    <span>Email marketing humano y cercano para emprendedores</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ================================================================= -->
+    <!-- 12. SCRIPTS: ANALÍTICA DE CONVERSIÓN & MANEJO DEL FORMULARIO      -->
+    <!-- ================================================================= -->
+    <script>
+        // Función de registro de eventos de analítica (respetando privacidad)
+        function trackEvent(eventName, eventDetails = {}) {
+            if (window.dataLayer && Array.isArray(window.dataLayer)) {
+                window.dataLayer.push({
+                    event: eventName,
+                    ...eventDetails
+                });
+            }
+            console.log('[Analytics Event]', eventName, eventDetails);
+        }
+
+        // Componente reactivo del formulario con Alpine.js
+        function leadFormHandler() {
+            return {
+                formData: {
+                    name: '',
+                    company_name: '',
+                    email: '',
+                    phone: '',
+                    message: '',
+                    privacy_policy: true,
+                    website_hp: '',
+                    utm_source: '{{ utm_source }}',
+                    utm_medium: '{{ utm_medium }}',
+                    utm_campaign: '{{ utm_campaign }}',
+                    utm_term: '{{ utm_term }}',
+                    utm_content: '{{ utm_content }}',
+                },
+                errors: {},
+                loading: false,
+                submitted: false,
+                successMessage: 'Gracias por tu interés. El equipo de Humm se pondrá en contacto contigo.',
+                formStarted: false,
+
+                trackFormStart() {
+                    if (!this.formStarted) {
+                        this.formStarted = true;
+                        trackEvent('lead_form_started');
+                    }
+                },
+
+                async submitForm() {
+                    this.errors = {};
+                    
+                    // Validaciones locales rápidas
+                    if (!this.formData.name.trim()) this.errors.name = 'Por favor ingresa tu nombre.';
+                    if (!this.formData.company_name.trim()) this.errors.company_name = 'Por favor indica el nombre de tu emprendimiento o empresa.';
+                    if (!this.formData.email.trim() || !this.formData.email.includes('@')) this.errors.email = 'Por favor ingresa un correo válido.';
+                    if (!this.formData.phone.trim()) this.errors.phone = 'Por favor ingresa un teléfono o WhatsApp.';
+                    if (!this.formData.privacy_policy) this.errors.privacy_policy = 'Debes aceptar las condiciones para continuar.';
+
+                    if (Object.keys(this.errors).length > 0) {
+                        return;
+                    }
+
+                    this.loading = true;
+
+                    try {
+                        const formElement = document.getElementById('lead-capture-form');
+                        const data = new FormData(formElement);
+
+                        const response = await fetch("{% url 'capture_lead' %}", {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: data
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            this.submitted = true;
+                            this.successMessage = result.message || this.successMessage;
+                            trackEvent('lead_form_submitted_success', {
+                                source: 'landing_hummailing',
+                                utm_source: this.formData.utm_source
+                            });
+                        } else {
+                            if (result.errors) {
+                                this.errors = result.errors;
+                            } else {
+                                alert('Ocurrió un error al enviar tu solicitud. Por favor intenta nuevamente.');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error al enviar formulario:', err);
+                        // Fallback: enviar como POST estándar si falla fetch
+                        document.getElementById('lead-capture-form').submit();
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

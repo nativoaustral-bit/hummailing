@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from organizations.models import Organization, SuppressionEntry
-from core.models import User
+from core.models import User, Lead
 from contacts.models import Contact, Tag
 from campaigns.models import Campaign, CampaignLink, TrackingEvent
 from opportunities.models import Opportunity
@@ -159,3 +159,85 @@ class HummailingMultiTenantTests(TestCase):
         response = self.client.get(reverse('organizations:admin_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Administración de Clientes Hummailing")
+
+    def test_landing_page_renders_successfully(self):
+        """Verifica que la landing page sea accesible públicamente y contenga los textos principales."""
+        response = self.client.get(reverse('landing'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Convierte cada correo en una oportunidad.")
+        self.assertContains(response, "Una herramienta de Humm")
+        self.assertContains(response, "Quiero conocer Hummailing")
+        self.assertContains(response, "logo.svg")
+
+    def test_lead_capture_ajax_success(self):
+        """Verifica que el endpoint de captación de leads procese solicitudes AJAX correctamente."""
+        payload = {
+            'name': 'Andrea González',
+            'company_name': 'Taller Nativo SpA',
+            'email': 'andrea@taller.cl',
+            'phone': '+56912345678',
+            'message': 'Me gustaría enviar catálogos mensuales.',
+            'privacy_policy': 'on',
+            'utm_source': 'google',
+            'utm_campaign': 'campana_pymes',
+        }
+        response = self.client.post(
+            reverse('capture_lead'),
+            payload,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            HTTP_ACCEPT='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['message'], "Gracias por tu interés. El equipo de Humm se pondrá en contacto contigo.")
+
+        # Verificar persistencia en base de datos
+        lead = Lead.objects.filter(email='andrea@taller.cl').first()
+        self.assertIsNotNone(lead)
+        self.assertEqual(lead.name, 'Andrea González')
+        self.assertEqual(lead.company_name, 'Taller Nativo SpA')
+        self.assertEqual(lead.source, 'landing_hummailing')
+        self.assertEqual(lead.utm_source, 'google')
+        self.assertEqual(lead.utm_campaign, 'campana_pymes')
+        self.assertEqual(lead.status, 'pending')
+
+    def test_lead_capture_honeypot_blocks_spam_silently(self):
+        """Verifica que si un bot rellena el campo honeypot, no se guarde el lead."""
+        initial_count = Lead.objects.count()
+        payload = {
+            'name': 'Bot Spammer',
+            'company_name': 'Spam Co',
+            'email': 'bot@spam.com',
+            'phone': '123456',
+            'privacy_policy': 'on',
+            'website_hp': 'http://spam-link.com',  # Honeypot lleno
+        }
+        response = self.client.post(
+            reverse('capture_lead'),
+            payload,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Lead.objects.count(), initial_count)
+
+    def test_lead_capture_validation_errors(self):
+        """Verifica que el formulario rechace datos faltantes o inválidos."""
+        payload = {
+            'name': '',
+            'company_name': '',
+            'email': 'invalido',
+            'phone': '',
+        }
+        response = self.client.post(
+            reverse('capture_lead'),
+            payload,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            HTTP_ACCEPT='application/json'
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertFalse(data['success'])
+        self.assertIn('name', data['errors'])
+        self.assertIn('email', data['errors'])
+

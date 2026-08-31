@@ -6,10 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ingresar a Hummailing — Una herramienta de Humm</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                    },
                     colors: {
                         brand: {
                             navy: '#173960',
@@ -29,12 +35,15 @@
 <body class="min-h-screen flex items-center justify-center bg-brand-bg p-4 antialiased font-sans">
     <div class="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
         
-        <!-- Logo Hummailing -->
+        <!-- Logo Hummailing con enlace a la Landing -->
         <div class="text-center mb-8">
-            <img src="{% static 'img/logo.svg' %}" alt="Hummailing Logo" class="h-14 mx-auto mb-3">
+            <a href="{% url 'landing' %}" class="inline-block group" title="Volver a la página principal">
+                <img src="{% static 'img/logo.svg' %}" alt="Hummailing Logo" class="h-14 mx-auto mb-3 group-hover:opacity-90 transition-opacity">
+            </a>
             <p class="text-xs text-brand-blue font-bold uppercase tracking-widest">Plataforma de Mailing para Emprendedores</p>
             <p class="text-xs text-slate-400 mt-1">Una herramienta del ecosistema Humm</p>
         </div>
+
         
         {% if messages %}
             <div class="mb-6 space-y-2">
