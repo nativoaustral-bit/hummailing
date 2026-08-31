@@ -12,7 +12,7 @@ from django.conf import settings
 import resend
 
 from .models import Organization, ActivityLog, BroadcastAnnouncement
-from core.models import User
+from core.models import User, Lead
 from contacts.models import Contact
 from campaigns.models import Campaign, TrackingEvent
 
@@ -31,6 +31,11 @@ def admin_dashboard(request):
     total_campaigns = Campaign.objects.count()
     total_emails_sent = TrackingEvent.objects.filter(event_type='sent').count()
     
+    # Métricas y prospectos de las Landings
+    total_leads = Lead.objects.count()
+    pending_leads = Lead.objects.filter(status='pending').count()
+    recent_leads = Lead.objects.order_by('-created_at')[:5]
+    
     recent_activity = ActivityLog.objects.select_related('organization', 'user').order_by('-timestamp')[:10]
     recent_orgs = Organization.objects.order_by('-created_at')[:5]
     recent_broadcasts = BroadcastAnnouncement.objects.order_by('-sent_at')[:3]
@@ -42,11 +47,15 @@ def admin_dashboard(request):
         'total_contacts': total_contacts,
         'total_campaigns': total_campaigns,
         'total_emails_sent': total_emails_sent,
+        'total_leads': total_leads,
+        'pending_leads': pending_leads,
+        'recent_leads': recent_leads,
         'recent_activity': recent_activity,
         'recent_orgs': recent_orgs,
         'recent_broadcasts': recent_broadcasts,
     }
     return render(request, 'organizations/admin_dashboard.html', context)
+
 
 @login_required
 @user_passes_test(is_humm_admin_check)
@@ -537,3 +546,104 @@ def broadcast_announcement(request):
 def broadcast_list(request):
     broadcasts = BroadcastAnnouncement.objects.order_by('-sent_at')
     return render(request, 'organizations/broadcast_list.html', {'broadcasts': broadcasts})
+
+
+# ==============================================================================
+# GESTIÓN DE LEADS Y PROSPECTOS DE LANDINGS EN PANEL MASTER HUMM
+# ==============================================================================
+
+@login_required
+@user_passes_test(is_humm_admin_check)
+def lead_list(request):
+    query = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    source = request.GET.get('source', '').strip()
+    
+    leads = Lead.objects.all().order_by('-created_at')
+    
+    if status:
+        leads = leads.filter(status=status)
+    if source:
+        leads = leads.filter(source=source)
+    if query:
+        leads = leads.filter(
+            Q(name__icontains=query) |
+            Q(company_name__icontains=query) |
+            Q(email__icontains=query) |
+            Q(phone__icontains=query) |
+            Q(message__icontains=query) |
+            Q(notes__icontains=query)
+        )
+        
+    total_leads = Lead.objects.count()
+    pending_leads = Lead.objects.filter(status='pending').count()
+    contacted_leads = Lead.objects.filter(status='contacted').count()
+    converted_leads = Lead.objects.filter(status='converted').count()
+    
+    # Fuentes distintas registradas para el filtro
+    sources = Lead.objects.values_list('source', flat=True).distinct()
+    
+    paginator = Paginator(leads, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    
+    context = {
+        'page_obj': page_obj,
+        'total_leads': total_leads,
+        'pending_leads': pending_leads,
+        'contacted_leads': contacted_leads,
+        'converted_leads': converted_leads,
+        'sources': sources,
+        'current_status': status,
+        'current_source': source,
+        'query': query,
+    }
+    return render(request, 'organizations/lead_list.html', context)
+
+
+@login_required
+@user_passes_test(is_humm_admin_check)
+def lead_detail(request, lead_id):
+    lead = get_object_or_404(Lead, id=lead_id)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status', lead.status)
+        new_notes = request.POST.get('notes', lead.notes)
+        
+        lead.status = new_status
+        lead.notes = new_notes
+        lead.save()
+        
+        ActivityLog.objects.create(
+            user=request.user,
+            action="Actualización de Prospecto",
+            details=f"Se actualizó el estado del lead {lead.name} ({lead.company_name}) a '{lead.get_status_display()}'."
+        )
+        
+        messages.success(request, f"Prospecto {lead.name} actualizado con éxito.")
+        return redirect('organizations:lead_detail', lead_id=lead.id)
+        
+    context = {
+        'lead': lead,
+    }
+    return render(request, 'organizations/lead_detail.html', context)
+
+
+@login_required
+@user_passes_test(is_humm_admin_check)
+def lead_delete(request, lead_id):
+    lead = get_object_or_404(Lead, id=lead_id)
+    if request.method == 'POST':
+        name = lead.name
+        company = lead.company_name
+        lead.delete()
+        
+        ActivityLog.objects.create(
+            user=request.user,
+            action="Eliminación de Prospecto",
+            details=f"Se eliminó el lead {name} ({company})."
+        )
+        messages.success(request, f"Prospecto {name} eliminado correctamente.")
+        return redirect('organizations:lead_list')
+        
+    return redirect('organizations:lead_detail', lead_id=lead_id)
+

@@ -89,12 +89,16 @@
                         <a href="{% url 'organizations:user_list' %}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'user_list' or request.resolver_match.url_name == 'user_create' %}bg-brand-navy-dark text-white font-bold{% else %}text-slate-200 hover:bg-brand-navy-dark hover:text-white{% endif %}">
                             Usuarios
                         </a>
+                        <a href="{% url 'organizations:lead_list' %}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors {% if 'lead' in request.resolver_match.url_name %}bg-brand-navy-dark text-white font-bold{% else %}text-slate-200 hover:bg-brand-navy-dark hover:text-white{% endif %}">
+                            🎯 Leads Landings
+                        </a>
                         <a href="{% url 'organizations:broadcast_list' %}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'broadcast_list' or request.resolver_match.url_name == 'broadcast_announcement' %}bg-brand-navy-dark text-white font-bold{% else %}text-slate-200 hover:bg-brand-navy-dark hover:text-white{% endif %}">
                             📢 Comunicados
                         </a>
                         <a href="{% url 'organizations:activity_logs' %}" class="px-3 py-2 rounded-md text-sm font-medium transition-colors {% if request.resolver_match.url_name == 'activity_logs' %}bg-brand-navy-dark text-white font-bold{% else %}text-slate-200 hover:bg-brand-navy-dark hover:text-white{% endif %}">
                             Auditoría
                         </a>
+
 
                     {% else %}
                         <!-- Menú del Cliente (Contactos, Campañas, Oportunidades) -->

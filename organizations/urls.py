@@ -26,6 +26,12 @@ urlpatterns = [
     path('humm-admin/broadcast/', views.broadcast_list, name='broadcast_list'),
     path('humm-admin/broadcast/new/', views.broadcast_announcement, name='broadcast_announcement'),
     
+    # Prospectos / Leads de Landings
+    path('humm-admin/leads/', views.lead_list, name='lead_list'),
+    path('humm-admin/leads/<int:lead_id>/', views.lead_detail, name='lead_detail'),
+    path('humm-admin/leads/<int:lead_id>/delete/', views.lead_delete, name='lead_delete'),
+    
     # Auditoría
     path('humm-admin/activity/', views.activity_log_list, name='activity_logs'),
 ]
+

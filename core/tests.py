@@ -241,3 +241,32 @@ class HummailingMultiTenantTests(TestCase):
         self.assertIn('name', data['errors'])
         self.assertIn('email', data['errors'])
 
+    def test_humm_admin_can_view_lead_list_and_detail(self):
+        """Verifica que el Administrador Humm pueda ver la lista y detalle de leads."""
+        lead = Lead.objects.create(
+            name="Test User",
+            company_name="Empresa Test",
+            email="test@empresa.cl",
+            phone="+56911112222",
+            source="landing_solucion_x"
+        )
+        self.client.login(username="admin_humm", password="password123")
+        
+        # Lista
+        response = self.client.get(reverse('organizations:lead_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Test User")
+        self.assertContains(response, "landing_solucion_x")
+        
+        # Detalle
+        response = self.client.get(reverse('organizations:lead_detail', kwargs={'lead_id': lead.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "test@empresa.cl")
+
+    def test_non_admin_cannot_access_lead_list(self):
+        """Verifica que un usuario regular de organización no pueda ver los leads de Humm."""
+        self.client.login(username="user_alpha", password="password123")
+        response = self.client.get(reverse('organizations:lead_list'))
+        self.assertNotEqual(response.status_code, 200)
+
+

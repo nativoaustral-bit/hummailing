@@ -5,11 +5,16 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+import logging
 from contacts.models import Contact
 from campaigns.models import Campaign, TrackingEvent
 from opportunities.models import Opportunity
 from organizations.models import ActivityLog
 from .models import Lead
+
+logger = logging.getLogger(__name__)
 
 def landing_page(request):
     # Guardar UTMs de la URL en la sesión si vienen presentes
@@ -51,6 +56,7 @@ def capture_lead(request):
     phone = request.POST.get('phone', '').strip()
     message = request.POST.get('message', '').strip()
     privacy_policy = request.POST.get('privacy_policy')
+    source = request.POST.get('source', '').strip() or 'landing_hummailing'
 
     # 3. Validación
     errors = {}
@@ -90,14 +96,14 @@ def capture_lead(request):
     utm_content = request.POST.get('utm_content') or request.session.get('utm_content', '')
 
     # 5. Persistencia en Base de Datos
-    Lead.objects.create(
+    lead = Lead.objects.create(
         name=name,
         company_name=company_name,
         email=email,
         phone=phone,
         message=message,
         privacy_accepted=True,
-        source='landing_hummailing',
+        source=source,
         utm_source=utm_source,
         utm_medium=utm_medium,
         utm_campaign=utm_campaign,
@@ -107,6 +113,45 @@ def capture_lead(request):
         status='pending'
     )
 
+    # 6. Notificación por Correo a contacto@humm.cl
+    try:
+        subject = f"🎯 [Nuevo Lead - {source}] {company_name} ({name})"
+        email_body = f"""¡Has recibido un nuevo prospecto / lead desde la landing page!
+
+DATOS DEL PROSPECTO:
+----------------------------------------
+• Nombre Completo: {name}
+• Emprendimiento / Empresa: {company_name}
+• Correo Electrónico: {email}
+• Teléfono / WhatsApp: {phone}
+• Mensaje / Consulta:
+{message if message else '(Sin mensaje adicional)'}
+
+ORIGEN Y SEGUIMIENTO:
+----------------------------------------
+• Solución / Origen: {source}
+• UTM Source: {utm_source or 'Directo / Ninguno'}
+• UTM Medium: {utm_medium or 'N/A'}
+• UTM Campaign: {utm_campaign or 'N/A'}
+• UTM Term: {utm_term or 'N/A'}
+• UTM Content: {utm_content or 'N/A'}
+• Dirección IP: {ip_address}
+• Fecha y Hora: {timezone.now().strftime('%d/%m/%Y %H:%M')}
+
+----------------------------------------
+Puedes revisar y gestionar este prospecto en el Panel Master Humm:
+https://mailing.humm.cl/humm-admin/leads/{lead.id}/
+"""
+        send_mail(
+            subject=subject,
+            message=email_body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=['contacto@humm.cl'],
+            fail_silently=True
+        )
+    except Exception as e:
+        logger.error(f"Error al enviar correo de notificación de lead a contacto@humm.cl: {e}")
+
     success_msg = "Gracias por tu interés. El equipo de Humm se pondrá en contacto contigo."
     
     if is_ajax:
@@ -114,6 +159,7 @@ def capture_lead(request):
 
     messages.success(request, success_msg)
     return redirect(reverse('landing') + '#contacto')
+
 
 
 @login_required

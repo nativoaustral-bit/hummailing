@@ -81,7 +81,8 @@
                 <span>Ingresar a mi cuenta</span>
                 <span>→</span>
             </button>
-            <input type="hidden" name="next" value="{% if next %}{{ next }}{% else %}/{% endif %}">
+            <input type="hidden" name="next" value="{% if next and next != '/' %}{{ next }}{% else %}{% url 'dashboard' %}{% endif %}">
+
         </form>
 
         <div class="mt-8 pt-6 border-t border-slate-100 text-center text-xs text-slate-400">

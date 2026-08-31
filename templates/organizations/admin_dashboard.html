@@ -29,8 +29,8 @@
         </div>
     </div>
 
-    <!-- Métricas Globales de Clientes -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <!-- Métricas Globales de Clientes y Leads -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
             <div class="flex items-center justify-between text-slate-400 mb-2">
                 <span class="text-xs font-bold uppercase tracking-wider">Empresas Clientes</span>
@@ -55,7 +55,7 @@
                 <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl text-lg">📋</span>
             </div>
             <p class="text-3xl font-black text-slate-900">{{ total_contacts }}</p>
-            <p class="text-xs text-slate-400 mt-1">Suma de bases de datos privadas</p>
+            <p class="text-xs text-slate-400 mt-1">Bases de datos privadas</p>
         </div>
 
         <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
@@ -64,40 +64,105 @@
                 <span class="p-2 bg-amber-50 text-brand-orange rounded-xl text-lg">🚀</span>
             </div>
             <p class="text-3xl font-black text-slate-900">{{ total_emails_sent }}</p>
-            <p class="text-xs text-slate-400 mt-1">Total despachos de clientes</p>
+            <p class="text-xs text-slate-400 mt-1">Total despachos</p>
         </div>
+
+        <!-- Métrica de Leads de Landings -->
+        <a href="{% url 'organizations:lead_list' %}" class="bg-white border-2 border-brand-orange/40 hover:border-brand-orange rounded-2xl p-5 shadow-sm transition-all group">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-900">Leads Landings</span>
+                <span class="p-2 bg-amber-100 text-brand-orange rounded-xl text-lg group-hover:scale-110 transition-transform">🎯</span>
+            </div>
+            <p class="text-3xl font-black text-brand-orange">{{ pending_leads }}</p>
+            <p class="text-xs text-amber-800 font-semibold mt-1">por contactar de {{ total_leads }}</p>
+        </a>
     </div>
 
     <!-- Módulos de Administración Master -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <a href="{% url 'organizations:organization_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-5 shadow-sm transition-all flex items-center space-x-3 group">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <a href="{% url 'organizations:lead_list' %}" class="bg-white border border-slate-200 hover:border-brand-orange rounded-2xl p-4 shadow-sm transition-all flex items-center space-x-3 group">
+            <span class="text-2xl group-hover:scale-110 transition-transform">🎯</span>
+            <div>
+                <h3 class="font-bold text-xs text-slate-900">Leads Landings</h3>
+                <p class="text-[11px] text-slate-400">Prospectos capturados</p>
+            </div>
+        </a>
+        <a href="{% url 'organizations:organization_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-4 shadow-sm transition-all flex items-center space-x-3 group">
             <span class="text-2xl group-hover:scale-110 transition-transform">🏢</span>
             <div>
                 <h3 class="font-bold text-xs text-slate-900">Organizaciones</h3>
-                <p class="text-[11px] text-slate-400">Límites, remitentes y estado</p>
+                <p class="text-[11px] text-slate-400">Límites y remitentes</p>
             </div>
         </a>
-        <a href="{% url 'organizations:user_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-5 shadow-sm transition-all flex items-center space-x-3 group">
+        <a href="{% url 'organizations:user_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-4 shadow-sm transition-all flex items-center space-x-3 group">
             <span class="text-2xl group-hover:scale-110 transition-transform">👥</span>
             <div>
                 <h3 class="font-bold text-xs text-slate-900">Usuarios & Claves</h3>
-                <p class="text-[11px] text-slate-400">Crear y restablecer accesos</p>
+                <p class="text-[11px] text-slate-400">Accesos a clientes</p>
             </div>
         </a>
-        <a href="{% url 'organizations:broadcast_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-5 shadow-sm transition-all flex items-center space-x-3 group">
+        <a href="{% url 'organizations:broadcast_list' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-4 shadow-sm transition-all flex items-center space-x-3 group">
             <span class="text-2xl group-hover:scale-110 transition-transform">📢</span>
             <div>
                 <h3 class="font-bold text-xs text-slate-900">Comunicados</h3>
-                <p class="text-[11px] text-slate-400">Mensajes masivos a clientes</p>
+                <p class="text-[11px] text-slate-400">Mensajes masivos</p>
             </div>
         </a>
-        <a href="{% url 'organizations:activity_logs' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-5 shadow-sm transition-all flex items-center space-x-3 group">
+        <a href="{% url 'organizations:activity_logs' %}" class="bg-white border border-slate-200 hover:border-brand-blue rounded-2xl p-4 shadow-sm transition-all flex items-center space-x-3 group">
             <span class="text-2xl group-hover:scale-110 transition-transform">📜</span>
             <div>
                 <h3 class="font-bold text-xs text-slate-900">Auditoría</h3>
-                <p class="text-[11px] text-slate-400">Historial de acciones y logins</p>
+                <p class="text-[11px] text-slate-400">Historial y logs</p>
             </div>
         </a>
+    </div>
+
+    <!-- Prospectos Recientes de Landings -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-brand-navy flex items-center gap-2">
+                    <span>🎯</span>
+                    <span>Prospectos Recientes de las Landings</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Personas interesadas capturadas desde formularios públicos.</p>
+            </div>
+            <a href="{% url 'organizations:lead_list' %}" class="text-xs font-bold text-brand-blue hover:underline">Ver todos los leads →</a>
+        </div>
+        <div class="divide-y divide-slate-100">
+            {% for lead in recent_leads %}
+            <div class="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 hover:bg-slate-50/50 px-2 rounded-lg transition-colors">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <a href="{% url 'organizations:lead_detail' lead.id %}" class="text-sm font-bold text-slate-800 hover:text-brand-blue">{{ lead.name }}</a>
+                        <span class="text-xs font-semibold text-brand-blue">({{ lead.company_name }})</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-brand-navy border border-blue-200">
+                            {{ lead.source }}
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-3">
+                        <span>✉️ {{ lead.email }}</span>
+                        <span>📞 {{ lead.phone }}</span>
+                        <span>📅 {{ lead.created_at|date:"d M Y, H:i" }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if lead.status == 'pending' %}
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-800 border border-amber-200">⏳ Pendiente</span>
+                    {% elif lead.status == 'contacted' %}
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-blue-50 text-brand-blue border border-blue-200">💬 Contactado</span>
+                    {% elif lead.status == 'converted' %}
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">🏆 Convertido</span>
+                    {% else %}
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">🚫 Descartado</span>
+                    {% endif %}
+                    <a href="{% url 'organizations:lead_detail' lead.id %}" class="text-xs font-bold text-brand-blue hover:text-brand-navy bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded-md">Ver</a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-slate-400 py-6 text-center">No hay prospectos registrados aún.</p>
+            {% endfor %}
+        </div>
     </div>
 
     <!-- Empresas Clientes & Actividad Reciente -->
@@ -108,6 +173,7 @@
                 <h3 class="text-base font-bold text-brand-navy">Empresas Clientes</h3>
                 <a href="{% url 'organizations:organization_list' %}" class="text-xs font-bold text-brand-blue hover:underline">Ver todas →</a>
             </div>
+
             <div class="divide-y divide-slate-100">
                 {% for org in recent_orgs %}
                 <div class="py-3 flex items-center justify-between">

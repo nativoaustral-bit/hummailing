@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Prospectos de Landings | Panel Master Humm{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Encabezado de la Sección -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2 text-xs text-brand-orange font-bold uppercase tracking-wider mb-1">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="hover:underline">Panel Master</a>
+                <span>&rsaquo;</span>
+                <span>Prospectos de Landings</span>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Prospectos y Leads Capturados</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Contactos registrados desde las páginas de aterrizaje públicas de Hummailing y otras soluciones Humm.</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'organizations:admin_dashboard' %}" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-colors">
+                &larr; Volver al Panel Master
+            </a>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Métricas de Leads -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <a href="{% url 'organizations:lead_list' %}" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:border-brand-blue/30 transition-all">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider">Total Leads</span>
+                <span class="p-1.5 bg-blue-50 text-brand-blue rounded-lg text-sm">🎯</span>
+            </div>
+            <p class="text-2xl font-black text-slate-900">{{ total_leads }}</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Capturados en total</p>
+        </a>
+
+        <a href="{% url 'organizations:lead_list' %}?status=pending" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:border-amber-400/50 transition-all {% if current_status == 'pending' %}ring-2 ring-amber-400{% endif %}">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-800">Por Contactar</span>
+                <span class="p-1.5 bg-amber-50 text-brand-orange rounded-lg text-sm">⏳</span>
+            </div>
+            <p class="text-2xl font-black text-brand-orange">{{ pending_leads }}</p>
+            <p class="text-[11px] text-amber-700 font-semibold mt-0.5">Pendientes de atención</p>
+        </a>
+
+        <a href="{% url 'organizations:lead_list' %}?status=contacted" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:border-blue-400/50 transition-all {% if current_status == 'contacted' %}ring-2 ring-blue-400{% endif %}">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-brand-blue">Contactados</span>
+                <span class="p-1.5 bg-cyan-50 text-cyan-700 rounded-lg text-sm">💬</span>
+            </div>
+            <p class="text-2xl font-black text-brand-blue">{{ contacted_leads }}</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">En seguimiento</p>
+        </a>
+
+        <a href="{% url 'organizations:lead_list' %}?status=converted" class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs hover:border-emerald-400/50 transition-all {% if current_status == 'converted' %}ring-2 ring-emerald-400{% endif %}">
+            <div class="flex items-center justify-between text-slate-400 mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Convertidos</span>
+                <span class="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-sm">🏆</span>
+            </div>
+            <p class="text-2xl font-black text-emerald-700">{{ converted_leads }}</p>
+            <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Nuevos clientes</p>
+        </a>
+    </div>
+
+    <!-- Barra de Búsqueda y Filtros -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+        <form method="get" class="flex flex-col md:flex-row gap-3 items-center">
+            <div class="relative flex-1 w-full">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-sm">🔍</span>
+                <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nombre, empresa, correo, teléfono o notas..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all">
+            </div>
+
+            <!-- Filtro por Estado -->
+            <select name="status" class="w-full md:w-48 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+                <option value="">Todos los Estados</option>
+                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>⏳ Pendiente</option>
+                <option value="contacted" {% if current_status == 'contacted' %}selected{% endif %}>💬 Contactado</option>
+                <option value="converted" {% if current_status == 'converted' %}selected{% endif %}>🏆 Convertido</option>
+                <option value="discarded" {% if current_status == 'discarded' %}selected{% endif %}>🚫 Descartado</option>
+            </select>
+
+            <!-- Filtro por Origen / Solución -->
+            {% if sources %}
+            <select name="source" class="w-full md:w-56 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+                <option value="">Todas las Landings / Fuentes</option>
+                {% for src in sources %}
+                <option value="{{ src }}" {% if current_source == src %}selected{% endif %}>🌐 {{ src }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+
+            <button type="submit" class="w-full md:w-auto bg-brand-navy hover:bg-brand-navy-dark text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors flex items-center justify-center space-x-1">
+                <span>Filtrar</span>
+            </button>
+
+            {% if query or current_status or current_source %}
+            <a href="{% url 'organizations:lead_list' %}" class="w-full md:w-auto text-center text-xs font-semibold text-slate-500 hover:text-slate-800 px-3 py-2">
+                Limpiar
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Tabla de Leads -->
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-4">Prospecto / Empresa</th>
+                        <th class="py-3.5 px-4">Contacto Directo</th>
+                        <th class="py-3.5 px-4">Origen / Solución</th>
+                        <th class="py-3.5 px-4">Estado</th>
+                        <th class="py-3.5 px-4">Fecha de Captación</th>
+                        <th class="py-3.5 px-4 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-xs">
+                    {% for lead in page_obj %}
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900 text-sm">
+                                <a href="{% url 'organizations:lead_detail' lead.id %}" class="hover:text-brand-blue">{{ lead.name }}</a>
+                            </div>
+                            <div class="text-brand-blue font-semibold text-xs mt-0.5">
+                                🏢 {{ lead.company_name }}
+                            </div>
+                            <div class="text-slate-400 text-[11px] mt-0.5">
+                                {{ lead.email }}
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-medium text-slate-800">
+                                {{ lead.phone }}
+                            </div>
+                            <a href="https://wa.me/{{ lead.phone|slugify }}?text=Hola%20{{ lead.name|urlencode }},%20te%20escribo%20de%20parte%20del%20equipo%20de%20Humm%20respecto%20a%20tu%20solicitud%20en%20Hummailing." target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-bold hover:underline mt-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                <span>💬 Abrir WhatsApp</span>
+                            </a>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="inline-block px-2.5 py-1 rounded-md text-[11px] font-bold bg-blue-50 text-brand-navy border border-blue-200">
+                                🌐 {{ lead.source }}
+                            </span>
+                            {% if lead.utm_source or lead.utm_campaign %}
+                            <div class="text-[10px] text-slate-400 mt-1">
+                                UTM: {{ lead.utm_source|default:"-" }} / {{ lead.utm_campaign|default:"-" }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if lead.status == 'pending' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                ⏳ Pendiente
+                            </span>
+                            {% elif lead.status == 'contacted' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-brand-blue border border-blue-200">
+                                💬 Contactado
+                            </span>
+                            {% elif lead.status == 'converted' %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                🏆 Convertido
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                🚫 Descartado
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-500 text-[11px]">
+                            <div>{{ lead.created_at|date:"d M Y, H:i" }}</div>
+                            <div class="text-slate-400 text-[10px]">IP: {{ lead.ip_address|default:"N/A" }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{% url 'organizations:lead_detail' lead.id %}" class="inline-flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:bg-brand-blue hover:text-white hover:border-brand-blue text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors">
+                                <span>Ver / Gestionar</span>
+                                <span>&rarr;</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-12 text-slate-400">
+                            <p class="text-3xl mb-2">🎯</p>
+                            <p class="font-bold text-slate-600">No se encontraron prospectos</p>
+                            <p class="text-xs text-slate-400 mt-1">Los nuevos leads capturados desde el formulario de la landing aparecerán automáticamente aquí.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div class="text-xs text-slate-500">
+                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} prospectos)
+            </div>
+            <div class="flex items-center space-x-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ current_status }}&source={{ current_source }}" class="px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-semibold hover:bg-slate-50">&laquo; Anterior</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ current_status }}&source={{ current_source }}" class="px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-semibold hover:bg-slate-50">Siguiente &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

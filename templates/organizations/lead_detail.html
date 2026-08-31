@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Prospecto: {{ lead.name }} | Panel Master Humm{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Encabezado con Migas de Pan -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2 text-xs text-brand-orange font-bold uppercase tracking-wider mb-1">
+                <a href="{% url 'organizations:admin_dashboard' %}" class="hover:underline">Panel Master</a>
+                <span>&rsaquo;</span>
+                <a href="{% url 'organizations:lead_list' %}" class="hover:underline">Prospectos</a>
+                <span>&rsaquo;</span>
+                <span>Detalle</span>
+            </div>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">{{ lead.name }}</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Empresa: <strong>{{ lead.company_name }}</strong> &bull; Registrado el {{ lead.created_at|date:"d M Y, H:i" }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'organizations:lead_list' %}" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-colors">
+                &larr; Volver a la Lista
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Columna Izquierda: Información de Contacto y Origen -->
+        <div class="md:col-span-2 space-y-6">
+            
+            <!-- Tarjeta de Datos Principales -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                <h2 class="text-base font-bold text-brand-navy border-b border-slate-100 pb-2 flex items-center justify-between">
+                    <span>👤 Información del Prospecto</span>
+                    <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-brand-blue border border-blue-200">
+                        {{ lead.source }}
+                    </span>
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="text-slate-400 font-bold uppercase">Nombre Completo:</span>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">{{ lead.name }}</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-bold uppercase">Emprendimiento / Empresa:</span>
+                        <p class="text-sm font-bold text-brand-blue mt-0.5">{{ lead.company_name }}</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-bold uppercase">Correo Electrónico:</span>
+                        <p class="text-sm font-semibold text-slate-800 mt-0.5">
+                            <a href="mailto:{{ lead.email }}" class="text-brand-blue hover:underline">{{ lead.email }}</a>
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-bold uppercase">Teléfono / WhatsApp:</span>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-2">
+                            <span>{{ lead.phone }}</span>
+                            <a href="https://wa.me/{{ lead.phone|slugify }}?text=Hola%20{{ lead.name|urlencode }},%20te%20escribo%20de%20parte%20del%20equipo%20de%20Humm%20respecto%20a%20tu%20solicitud%20en%20Hummailing." target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100">
+                                💬 WhatsApp
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Mensaje o Consulta Opcional -->
+                <div class="pt-2 border-t border-slate-100">
+                    <span class="text-slate-400 font-bold uppercase text-xs">Mensaje / Consulta del Cliente:</span>
+                    <div class="mt-1.5 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 leading-relaxed italic">
+                        {% if lead.message %}
+                            "{{ lead.message }}"
+                        {% else %}
+                            <span class="text-slate-400 not-italic">(El usuario no incluyó un mensaje adicional).</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta de Parámetros de Marketing y UTMs -->
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                <h2 class="text-base font-bold text-brand-navy border-b border-slate-100 pb-2">
+                    🌐 Origen de la Conversión y Tracking
+                </h2>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">Solución / Origen</span>
+                        <p class="font-bold text-brand-navy mt-0.5">{{ lead.source }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">UTM Source</span>
+                        <p class="font-semibold text-slate-800 mt-0.5">{{ lead.utm_source|default:"Directo / Ninguno" }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">UTM Campaign</span>
+                        <p class="font-semibold text-slate-800 mt-0.5">{{ lead.utm_campaign|default:"N/A" }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">UTM Medium</span>
+                        <p class="font-semibold text-slate-800 mt-0.5">{{ lead.utm_medium|default:"N/A" }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">Dirección IP</span>
+                        <p class="font-semibold text-slate-800 mt-0.5">{{ lead.ip_address|default:"N/A" }}</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                        <span class="text-slate-400 font-bold uppercase text-[10px]">Fecha de Registro</span>
+                        <p class="font-semibold text-slate-800 mt-0.5">{{ lead.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Columna Derecha: Gestión de Estado y Notas Internas Humm -->
+        <div class="space-y-6">
+            
+            <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
+                <h2 class="text-base font-bold text-brand-navy border-b border-slate-100 pb-2">
+                    ⚙️ Gestión Comercial
+                </h2>
+
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+
+                    <!-- Estado del Lead -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Estado Comercial
+                        </label>
+                        <select name="status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
+                            <option value="pending" {% if lead.status == 'pending' %}selected{% endif %}>⏳ Pendiente de Contacto</option>
+                            <option value="contacted" {% if lead.status == 'contacted' %}selected{% endif %}>💬 Contactado</option>
+                            <option value="converted" {% if lead.status == 'converted' %}selected{% endif %}>🏆 Convertido a Cliente</option>
+                            <option value="discarded" {% if lead.status == 'discarded' %}selected{% endif %}>🚫 Descartado</option>
+                        </select>
+                    </div>
+
+                    <!-- Notas de Seguimiento Interno -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                            Notas Internas del Equipo Humm
+                        </label>
+                        <textarea name="notes" rows="6" placeholder="Añade notas sobre llamadas, cotizaciones o acuerdos..." class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all">{{ lead.notes }}</textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center space-x-1.5">
+                        <span>💾 Guardar Cambios</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Zona de Peligro / Eliminar -->
+            <div class="bg-red-50/60 border border-red-200 rounded-2xl p-5 space-y-3">
+                <div class="text-xs font-bold text-red-800 uppercase tracking-wider">Zona de Administración</div>
+                <p class="text-xs text-red-700">Eliminar este registro de lead de forma permanente de la base de datos.</p>
+                <form method="post" action="{% url 'organizations:lead_delete' lead.id %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente a este prospecto?');">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
+                        🗑️ Eliminar Prospecto
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
