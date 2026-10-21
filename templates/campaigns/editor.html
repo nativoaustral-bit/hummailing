@@ -722,17 +722,13 @@
                 reader.readAsDataURL(file);
 
                 // 2. Subir en segundo plano al servidor para guardar archivo en /media/logos/
-                let csrfToken = '{{ csrf_token }}';
-                const match = document.cookie.match(/csrftoken=([^;]+)/);
-                if (match) csrfToken = match[1];
-
                 const formData = new FormData();
                 formData.append('image', file);
 
                 fetch('{% url "campaigns:upload_image" %}', {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrfToken
+                        'X-CSRFToken': this.getCsrfToken()
                     },
                     body: formData
                 })

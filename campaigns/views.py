@@ -119,6 +119,40 @@ def campaign_delete(request, campaign_id):
         messages.success(request, f"Campaña '{name}' eliminada.")
     return redirect('campaigns:list')
 
+import base64
+import re
+import os
+
+def extract_and_save_base64_image(data_uri):
+    """
+    Si la URL es un data:image/...;base64,..., decodifica y guarda el archivo en MEDIA_ROOT/logos/
+    retornando la URL limpia. Si no, retorna la URL original.
+    """
+    if not isinstance(data_uri, str) or not data_uri.startswith('data:image/'):
+        return data_uri
+
+    match = re.match(r'^data:image/([a-zA-Z0-9\+\-]+);base64,(.+)$', data_uri)
+    if not match:
+        return data_uri
+
+    raw_ext = match.group(1).lower()
+    b64_data = match.group(2)
+    ext_map = {'jpeg': '.jpg', 'jpg': '.jpg', 'png': '.png', 'webp': '.webp', 'gif': '.gif'}
+    ext = ext_map.get(raw_ext, '.png')
+
+    try:
+        file_bytes = base64.b64decode(b64_data)
+        logos_dir = settings.MEDIA_ROOT / 'logos'
+        os.makedirs(logos_dir, exist_ok=True)
+        filename = f"img_{uuid.uuid4().hex[:12]}{ext}"
+        file_path = logos_dir / filename
+        with open(file_path, 'wb') as f:
+            f.write(file_bytes)
+        return f"{settings.MEDIA_URL}logos/{filename}"
+    except Exception as e:
+        logger.warning(f"No se pudo extraer imagen base64: {e}")
+        return data_uri
+
 @role_required(['org_admin', 'campaign_editor'])
 def campaign_editor(request, campaign_id):
     try:
@@ -142,6 +176,14 @@ def campaign_editor(request, campaign_id):
                 'button_text': '#ffffff',
                 'canvas_bg': '#ffffff'
             })
+
+            # Convertir imágenes base64 a archivos estáticos limpios
+            for block in blocks:
+                content = block.get('content', {})
+                for key in ['url', 'logo_url', 'image_url']:
+                    if key in content and isinstance(content[key], str) and content[key].startswith('data:image/'):
+                        content[key] = extract_and_save_base64_image(content[key])
+
             campaign.content_blocks = {
                 'theme': theme,
                 'blocks': blocks

@@ -198,6 +198,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Tamaños máximos para payloads JSON grandes (bloques con imágenes inline)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400  # 25 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 26214400  # 25 MB
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 # Custom User Model
 AUTH_USER_MODEL = 'core.User'
 
