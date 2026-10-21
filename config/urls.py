@@ -40,7 +40,7 @@ def custom_500_view(request):
 
 def server_status_view(request):
     key = request.GET.get('key')
-    if key != 'humm_debug_2026':
+    if key != 'humm_debug_2026' or not (request.user.is_authenticated and (request.user.is_superuser or getattr(request.user, 'is_humm_master_admin', False))):
         return JsonResponse({'status': 'denied'}, status=403)
     
     import sys, os
