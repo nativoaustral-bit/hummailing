@@ -36,6 +36,22 @@ jobs:
           script: |
             cd ${{ secrets.TARGET_DIR }}
             source venv/bin/activate
+            python -c "
+            import sqlite3
+            for p in ['/home1/paulocis/private/hummailing_data/db.sqlite3', 'db.sqlite3']:
+                try:
+                    conn = sqlite3.connect(p)
+                    conn.execute('PRAGMA journal_mode = DELETE;')
+                    conn.close()
+                    print('SQLite set to DELETE mode on', p)
+                except Exception as e:
+                    print('Notice on', p, e)
+            " || true
+            rm -f /home1/paulocis/private/hummailing_data/db.sqlite3-wal /home1/paulocis/private/hummailing_data/db.sqlite3-shm || true
+            rm -f db.sqlite3-wal db.sqlite3-shm || true
+            chmod 775 /home1/paulocis/private/hummailing_data/ 2>/dev/null || true
+            chmod 664 /home1/paulocis/private/hummailing_data/db.sqlite3 2>/dev/null || true
+            chmod 775 /home1/paulocis/private/hummailing_data/logs/ 2>/dev/null || true
             python manage.py migrate
             python manage.py collectstatic --noinput
             chmod 755 passenger_wsgi.py manage.py

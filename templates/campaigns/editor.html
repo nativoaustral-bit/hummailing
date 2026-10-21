@@ -778,10 +778,25 @@
                         })
                     });
 
-                    const data = await response.json().catch(() => null);
+                    let data = null;
+                    let rawText = '';
+                    try {
+                        rawText = await response.text();
+                        data = JSON.parse(rawText);
+                    } catch (parseErr) {
+                        data = null;
+                    }
 
                     if (!response.ok) {
-                        const msg = (data && data.message) ? data.message : `Error del servidor (código HTTP ${response.status})`;
+                        let msg = `Error del servidor (código HTTP ${response.status})`;
+                        if (data && data.message) {
+                            msg = data.message;
+                        } else if (rawText) {
+                            const titleMatch = rawText.match(/<title>(.*?)<\/title>/i);
+                            const h1Match = rawText.match(/<h1>(.*?)<\/h1>/i);
+                            const snippet = titleMatch ? titleMatch[1] : (h1Match ? h1Match[1] : rawText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 150));
+                            if (snippet) msg += `: ${snippet}`;
+                        }
                         throw new Error(msg);
                     }
 
@@ -794,7 +809,11 @@
                             }, 2000);
                         }
                     } else {
-                        throw new Error((data && data.message) || 'Error desconocido al guardar.');
+                        const errMsg = (data && data.message) ? data.message : 'Error desconocido al guardar.';
+                        if (data && data.traceback) {
+                            console.error('Detalles del error del servidor:', data.traceback);
+                        }
+                        throw new Error(errMsg);
                     }
                 } catch (error) {
                     console.error('Error al guardar campaña:', error);
@@ -819,9 +838,22 @@
                     body: JSON.stringify({ is_test: true, test_email: this.testEmail })
                 })
                 .then(async response => {
-                    const data = await response.json().catch(() => null);
+                    let data = null;
+                    let rawText = '';
+                    try {
+                        rawText = await response.text();
+                        data = JSON.parse(rawText);
+                    } catch (parseErr) {
+                        data = null;
+                    }
                     if (!response.ok) {
-                        throw new Error((data && data.message) || `Error HTTP ${response.status}`);
+                        let msg = `Error HTTP ${response.status}`;
+                        if (data && data.message) msg = data.message;
+                        else if (rawText) {
+                            const titleMatch = rawText.match(/<title>(.*?)<\/title>/i);
+                            if (titleMatch) msg += `: ${titleMatch[1]}`;
+                        }
+                        throw new Error(msg);
                     }
                     return data;
                 })
@@ -832,6 +864,7 @@
                 })
                 .catch(error => {
                     this.testSending = false;
+                    console.error('Error al enviar correo de prueba:', error);
                     alert('Error al enviar prueba: ' + error.message);
                 });
             },

@@ -35,7 +35,7 @@ def custom_500_view(request):
         return JsonResponse({
             'status': 'error',
             'message': f"Error interno en servidor: {error_msg}"
-        }, status=500)
+        }, status=200)
     return render(request, '500.html', status=500)
 
 handler500 = 'config.urls.custom_500_view'

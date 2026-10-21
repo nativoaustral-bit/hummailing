@@ -135,7 +135,7 @@ def campaign_editor(request, campaign_id):
 
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            data = json.loads(request.body) if request.body else {}
             blocks = data.get('blocks', [])
             theme = data.get('theme', {
                 'header_bg': '#173960',
@@ -149,7 +149,7 @@ def campaign_editor(request, campaign_id):
             }
             campaign.save()
             
-            # Sincronizar CampaignLinks para enlaces de conversión y tracking
+            # Sincronizar CampaignLinks para enlaces de conversión y tracking de forma segura
             for block in blocks:
                 if block.get('type') == 'cta':
                     url = block.get('content', {}).get('url', '').strip()
@@ -158,30 +158,38 @@ def campaign_editor(request, campaign_id):
                     service_interest = block.get('content', {}).get('service_interest', text)
                     
                     if url and url != '#':
-                        link_obj = CampaignLink.objects.filter(campaign=campaign, original_url=url).first()
-                        if not link_obj:
-                            link_obj = CampaignLink.objects.create(
-                                campaign=campaign,
-                                original_url=url,
-                                link_type=link_type,
-                                service_interest=service_interest,
-                                token=uuid.uuid4().hex[:12]
-                            )
-                        else:
-                            # Actualizar tipo de enlace y token si faltara
-                            link_obj.link_type = link_type
-                            link_obj.service_interest = service_interest
-                            if not link_obj.token:
-                                link_obj.token = uuid.uuid4().hex[:12]
-                            link_obj.save(update_fields=['link_type', 'service_interest', 'token'])
+                        try:
+                            link_obj = CampaignLink.objects.filter(campaign=campaign, original_url=url).first()
+                            if not link_obj:
+                                link_obj = CampaignLink.objects.create(
+                                    campaign=campaign,
+                                    original_url=url,
+                                    link_type=link_type,
+                                    service_interest=service_interest,
+                                    token=uuid.uuid4().hex[:12]
+                                )
+                            else:
+                                link_obj.link_type = link_type
+                                link_obj.service_interest = service_interest
+                                if not link_obj.token:
+                                    link_obj.token = uuid.uuid4().hex[:12]
+                                link_obj.save(update_fields=['link_type', 'service_interest', 'token'])
+                        except Exception as link_err:
+                            logger.warning(f"Error sincronizando enlace CTA '{url}': {link_err}")
                             
             return JsonResponse({'status': 'success'})
         except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
             try:
-                logger.error(f"Error guardando contenido de campaña {campaign_id}: {e}", exc_info=True)
+                logger.error(f"Error guardando contenido de campaña {campaign_id}: {tb}")
             except Exception:
                 pass
-            return JsonResponse({'status': 'error', 'message': f"Error al procesar el guardado: {str(e)}"}, status=500)
+            return JsonResponse({
+                'status': 'error', 
+                'message': f"Error al procesar el guardado: {str(e)}",
+                'traceback': tb
+            }, status=200)
             
     raw_blocks = campaign.content_blocks or []
     if isinstance(raw_blocks, dict):

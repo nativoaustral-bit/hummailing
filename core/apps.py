@@ -11,7 +11,7 @@ class CoreConfig(AppConfig):
             if connection.vendor == 'sqlite':
                 try:
                     with connection.cursor() as cursor:
-                        cursor.execute("PRAGMA journal_mode = WAL;")
+                        cursor.execute("PRAGMA journal_mode = DELETE;")
                         cursor.execute("PRAGMA synchronous = NORMAL;")
                         cursor.execute("PRAGMA busy_timeout = 30000;")
                 except Exception:
