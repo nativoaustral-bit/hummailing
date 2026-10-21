@@ -18,6 +18,27 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import render
+from django.http import JsonResponse
+
+def custom_500_view(request):
+    import sys, traceback
+    exc_type, exc_value, exc_tb = sys.exc_info()
+    error_msg = str(exc_value) if exc_value else "Error interno no especificado"
+    
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or 
+        'application/json' in request.headers.get('accept', '') or
+        request.path.startswith('/campaigns/')
+    )
+    if is_ajax:
+        return JsonResponse({
+            'status': 'error',
+            'message': f"Error interno en servidor: {error_msg}"
+        }, status=500)
+    return render(request, '500.html', status=500)
+
+handler500 = 'config.urls.custom_500_view'
 
 urlpatterns = [
     path('admin/', admin.site.urls),

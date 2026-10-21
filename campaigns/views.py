@@ -122,10 +122,17 @@ def campaign_delete(request, campaign_id):
 @login_required
 @role_required(['org_admin', 'campaign_editor'])
 def campaign_editor(request, campaign_id):
+    try:
+        org = request.organization
+        if getattr(request.user, 'is_humm_master_admin', False) and (not org or not Campaign.objects.filter(id=campaign_id, organization=org).exists()):
+            campaign = get_object_or_404(Campaign, id=campaign_id)
+        else:
+            campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
+    except Exception as e:
+        if request.method == 'POST':
+            return JsonResponse({'status': 'error', 'message': f"No se encontró la campaña o acceso denegado: {str(e)}"}, status=404)
+        raise
 
-    org = request.organization
-    campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
-    
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -170,8 +177,11 @@ def campaign_editor(request, campaign_id):
                             
             return JsonResponse({'status': 'success'})
         except Exception as e:
-            logger.error(f"Error guardando contenido de campaña {campaign_id}: {e}", exc_info=True)
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            try:
+                logger.error(f"Error guardando contenido de campaña {campaign_id}: {e}", exc_info=True)
+            except Exception:
+                pass
+            return JsonResponse({'status': 'error', 'message': f"Error al procesar el guardado: {str(e)}"}, status=500)
             
     raw_blocks = campaign.content_blocks or []
     if isinstance(raw_blocks, dict):

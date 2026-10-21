@@ -230,7 +230,7 @@ DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='Hummailing <hola@humm.cl
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 # Logging seguro en directorio privado
-private_logs_dir = Path('/home1/paulocis/logs')
+private_logs_dir = Path('/home1/paulocis/private/hummailing_data/logs')
 if private_logs_dir.exists():
     LOGS_DIR = private_logs_dir
 else:
@@ -252,6 +252,7 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': LOGS_DIR / 'hummailing.log',
             'formatter': 'standard',
+            'delay': True,
         },
         'console': {
             'level': 'INFO',
