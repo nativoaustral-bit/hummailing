@@ -129,3 +129,29 @@ class ContactImportTestCase(TestCase):
         self.client.force_login(self.editor_user)
         response = self.client.get('/contacts/import/')
         self.assertEqual(response.status_code, 200)
+
+    def test_contact_list_pagination(self):
+        """Verifica que la lista de contactos pagine adecuadamente y respete el page_size."""
+        # Crear 35 contactos para la organización
+        contacts = [
+            Contact(organization=self.org, email=f"contacto{i}@test.com", first_name=f"User {i}")
+            for i in range(35)
+        ]
+        Contact.objects.bulk_create(contacts)
+        
+        self.client.force_login(self.admin_user)
+        # Default page_size es 50 -> deben mostrarse los 35 en una sola página
+        resp = self.client.get('/contacts/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.context['page_obj']), 35)
+        self.assertEqual(resp.context['total_count'], 35)
+
+        # Con page_size=25 -> página 1 debe tener 25, y página 2 debe tener 10
+        resp_p1 = self.client.get('/contacts/?page_size=25&page=1')
+        self.assertEqual(len(resp_p1.context['page_obj']), 25)
+        self.assertTrue(resp_p1.context['page_obj'].has_next())
+
+        resp_p2 = self.client.get('/contacts/?page_size=25&page=2')
+        self.assertEqual(len(resp_p2.context['page_obj']), 10)
+        self.assertTrue(resp_p2.context['page_obj'].has_previous())
+

@@ -41,7 +41,17 @@
                 <option value="bounced" {% if status_filter == 'bounced' %}selected{% endif %}>Rebotado</option>
             </select>
 
+            <select name="page_size" onchange="this.form.submit()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue" title="Contactos por página">
+                <option value="25" {% if page_size == 25 %}selected{% endif %}>25 por página</option>
+                <option value="50" {% if page_size == 50 %}selected{% endif %}>50 por página</option>
+                <option value="100" {% if page_size == 100 %}selected{% endif %}>100 por página</option>
+                <option value="200" {% if page_size == 200 %}selected{% endif %}>200 por página</option>
+            </select>
+
             <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Filtrar</button>
+            {% if query or tag_filter or status_filter %}
+            <a href="{% url 'contacts:list' %}" class="text-xs text-slate-400 hover:text-slate-600 px-2 py-2">Limpiar</a>
+            {% endif %}
         </form>
     </div>
 
@@ -110,6 +120,55 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <!-- Barra de Paginación y Resumen -->
+        <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+            <div>
+                {% if total_count > 0 %}
+                Mostrando del <strong class="text-slate-900">{{ page_obj.start_index }}</strong> al <strong class="text-slate-900">{{ page_obj.end_index }}</strong> de <strong class="text-slate-900">{{ total_count }}</strong> contactos
+                {% else %}
+                0 contactos
+                {% endif %}
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <div class="flex items-center space-x-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&tag={{ tag_filter }}&status={{ status_filter }}&page_size={{ page_size }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors shadow-sm">
+                    ← Anterior
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-400 cursor-not-allowed">
+                    ← Anterior
+                </span>
+                {% endif %}
+
+                <div class="hidden sm:flex items-center space-x-1 px-2">
+                    {% for p in page_obj.paginator.page_range %}
+                        {% if p == page_obj.number %}
+                        <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-blue text-white font-bold text-xs shadow-sm">
+                            {{ p }}
+                        </span>
+                        {% elif p > page_obj.number|add:'-3' and p < page_obj.number|add:'3' %}
+                        <a href="?page={{ p }}&q={{ query }}&tag={{ tag_filter }}&status={{ status_filter }}&page_size={{ page_size }}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors shadow-sm">
+                            {{ p }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&tag={{ tag_filter }}&status={{ status_filter }}&page_size={{ page_size }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors shadow-sm">
+                    Siguiente →
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-400 cursor-not-allowed">
+                    Siguiente →
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

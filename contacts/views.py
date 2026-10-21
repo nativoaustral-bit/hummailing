@@ -31,7 +31,16 @@ def contact_list(request):
         
     tags = Tag.objects.filter(organization=org).order_by('name') if org else Tag.objects.none()
     
-    paginator = Paginator(contacts, 25)
+    # Tamaño de página configurable (default 50 contactos)
+    page_size_str = request.GET.get('page_size', '50')
+    try:
+        page_size = int(page_size_str)
+        if page_size not in [25, 50, 100, 200]:
+            page_size = 50
+    except (ValueError, TypeError):
+        page_size = 50
+
+    paginator = Paginator(contacts, page_size)
     page_obj = paginator.get_page(request.GET.get('page'))
     
     context = {
@@ -40,6 +49,7 @@ def contact_list(request):
         'query': query,
         'tag_filter': tag_filter,
         'status_filter': status_filter,
+        'page_size': page_size,
         'total_count': contacts.count() if hasattr(contacts, 'count') else 0,
     }
     return render(request, 'contacts/list.html', context)
