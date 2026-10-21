@@ -145,10 +145,14 @@ def contact_update(request, contact_id):
     tags_string = ", ".join([t.name for t in contact.tags.all()])
     return render(request, 'contacts/edit.html', {'contact': contact, 'tags_string': tags_string})
 
-@login_required
-@role_required(['org_admin'])
-def import_contacts(request):
+import logging
+from .utils import parse_imported_file
 
+logger = logging.getLogger(__name__)
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def import_contacts(request):
     org = request.organization
     if not org:
         messages.error(request, "No tienes una organización activa seleccionada.")
@@ -156,30 +160,18 @@ def import_contacts(request):
         
     if request.method == 'POST':
         if 'file' not in request.FILES:
-            messages.error(request, "No se ha proporcionado ningún archivo.")
+            messages.error(request, "No se ha proporcionado ningún archivo para importar.")
             return redirect('contacts:import')
             
-        file = request.FILES['file']
+        uploaded_file = request.FILES['file']
         tag_name = request.POST.get('tag', '').strip()
         
         try:
-            import pandas as pd
-            if file.name.endswith('.csv'):
-                df = pd.read_csv(file)
-            elif file.name.endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(file)
-            else:
-                messages.error(request, "Formato no soportado. Sube un archivo CSV o Excel.")
+            contacts_data, parse_error = parse_imported_file(uploaded_file)
+            if parse_error:
+                messages.error(request, parse_error)
                 return redirect('contacts:import')
                 
-            df.columns = df.columns.str.lower()
-            
-            if 'email' not in df.columns:
-                messages.error(request, "El archivo debe contener una columna llamada 'email'.")
-                return redirect('contacts:import')
-                
-            df = df.fillna('')
-            
             created_count = 0
             updated_count = 0
             skipped_unsub_count = 0
@@ -194,64 +186,88 @@ def import_contacts(request):
                 Q(organization=org) | Q(organization__isnull=True)
             ).values_list('email', flat=True))
             
-            for _, row in df.iterrows():
-                email = str(row['email']).strip().lower()
-                if not email or '@' not in email or '.' not in email:
-                    invalid_count += 1
-                    continue
-                    
-                # Si está desuscrito previamente, no lo reactivamos automáticamente
+            # Obtener conteo actual
+            current_count = Contact.objects.filter(organization=org).count()
+            limit_reached = False
+            
+            for item in contacts_data:
+                email = item['email']
+                
+                # Desuscripción previa respetada
                 if email in suppressed_emails:
                     skipped_unsub_count += 1
                     continue
                     
-                first_name = str(row.get('nombre', '')).strip()
-                last_name = str(row.get('apellido', '')).strip()
-                company = str(row.get('empresa', '')).strip()
-                phone = str(row.get('telefono', '')).strip()
+                first_name = item.get('first_name', '').strip()
+                last_name = item.get('last_name', '').strip()
+                company = item.get('company', '').strip()
+                phone = item.get('phone', '').strip()
                 
                 # Verificar límite de contactos
-                current_count = Contact.objects.filter(organization=org).count()
                 if current_count >= org.max_contacts:
-                    messages.warning(request, f"Se detuvo la importación porque alcanzaste el límite de {org.max_contacts} contactos.")
+                    limit_reached = True
                     break
                     
-                contact, created = Contact.objects.update_or_create(
+                contact, created = Contact.objects.get_or_create(
                     organization=org,
                     email=email,
                     defaults={
-                        'first_name': first_name if first_name else None,
-                        'last_name': last_name if last_name else None,
-                        'company': company if company else None,
-                        'phone': phone if phone else None,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'company': company,
+                        'phone': phone,
+                        'status': 'active',
                     }
                 )
                 
+                if created:
+                    created_count += 1
+                    current_count += 1
+                else:
+                    # Actualizar campos no vacíos provistos en la importación
+                    updated_fields = []
+                    if first_name and contact.first_name != first_name:
+                        contact.first_name = first_name
+                        updated_fields.append('first_name')
+                    if last_name and contact.last_name != last_name:
+                        contact.last_name = last_name
+                        updated_fields.append('last_name')
+                    if company and contact.company != company:
+                        contact.company = company
+                        updated_fields.append('company')
+                    if phone and contact.phone != phone:
+                        contact.phone = phone
+                        updated_fields.append('phone')
+                    if updated_fields:
+                        contact.save(update_fields=updated_fields)
+                    updated_count += 1
+                    
                 if tag:
                     contact.tags.add(tag)
                     
-                if created:
-                    created_count += 1
-                else:
-                    updated_count += 1
-                    
+            if limit_reached:
+                messages.warning(
+                    request, 
+                    f"Se detuvo la importación porque tu organización alcanzó el límite de {org.max_contacts} contactos permitidos."
+                )
+                
             ActivityLog.objects.create(
                 organization=org,
                 user=request.user,
                 action="Importación de Contactos",
-                details=f"Importación completada: {created_count} creados, {updated_count} actualizados, {skipped_unsub_count} omitidos por baja."
+                details=f"Importación ({uploaded_file.name}): {created_count} creados, {updated_count} actualizados, {skipped_unsub_count} omitidos por baja previa."
             )
             
-            msg = f"Importación exitosa. Creados: {created_count}, Actualizados: {updated_count}."
+            msg = f"¡Importación completada con éxito! Creados: {created_count}, Actualizados: {updated_count}."
             if skipped_unsub_count > 0:
                 msg += f" Omitidos por desuscripción previa: {skipped_unsub_count}."
-            if invalid_count > 0:
-                msg += f" Correos inválidos descartados: {invalid_count}."
             messages.success(request, msg)
             
         except Exception as e:
+            logger.error(f"Error procesando importación de archivo {uploaded_file.name}: {e}", exc_info=True)
             messages.error(request, f"Error al procesar el archivo: {str(e)}")
             
         return redirect('contacts:import')
         
     return render(request, 'contacts/import.html')
+
