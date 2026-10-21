@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enlace Inválido | Hummailing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-slate-50 p-4 antialiased font-sans">
+    <div class="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
+        <div class="p-3 bg-red-50 text-red-600 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 text-2xl">
+            ✕
+        </div>
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Enlace de Desuscripción Inválido</h1>
+        <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+            {{ error|default:"El enlace de desuscripción utilizado es inválido, ha sido alterado o ya no está disponible." }}
+        </p>
+        <a href="https://humm.cl" class="inline-block py-2.5 px-6 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-xl text-xs transition-colors">
+            Volver a Humm
+        </a>
+        <div class="pt-6 mt-6 border-t border-slate-100 text-[11px] text-slate-400">
+            Hummailing — Humm Co-Creation
+        </div>
+    </div>
+</body>
+</html>

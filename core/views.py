@@ -14,6 +14,8 @@ from opportunities.models import Opportunity
 from organizations.models import ActivityLog
 from .models import Lead
 
+from core.security import check_and_increment_rate_limit
+
 logger = logging.getLogger(__name__)
 
 def landing_page(request):
@@ -33,13 +35,31 @@ def landing_page(request):
     return render(request, 'landing.html', context)
 
 
+from django.core.cache import cache
+
 def capture_lead(request):
     if request.method != 'POST':
         return redirect('landing')
 
     is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', '')
 
-    # 1. Verificación Honeypot anti-spam
+    # 1. Detección segura de IP y Rate Limiting por IP (Máximo 5 solicitudes por IP por hora)
+    ip_address = request.META.get('REMOTE_ADDR') or '127.0.0.1'
+    cache_key = f"lead_rate_{ip_address}"
+    is_allowed, current_requests = check_and_increment_rate_limit(cache_key, limit=5, timeout=3600)
+
+    if not is_allowed:
+        logger.warning(f"Rate limit excedido para captación de leads desde IP: {ip_address} (solicitud #{current_requests})")
+        limit_msg = "Has superado el límite de solicitudes permitidas por hora. Por favor intenta más tarde."
+        if is_ajax:
+            return JsonResponse({'success': False, 'message': limit_msg}, status=429)
+        messages.error(request, limit_msg)
+        return render(request, 'landing.html', {
+            'current_year': timezone.now().year,
+            'scroll_to_contact': True,
+        })
+
+    # 2. Verificación Honeypot anti-spam
     honeypot = request.POST.get('website_hp', '').strip()
     if honeypot:
         # Si el bot rellenó el campo oculto, simular éxito silencioso sin guardar basura
@@ -49,16 +69,16 @@ def capture_lead(request):
         messages.success(request, msg)
         return redirect(reverse('landing') + '#contacto')
 
-    # 2. Extracción de datos
-    name = request.POST.get('name', '').strip()
-    company_name = request.POST.get('company_name', '').strip()
-    email = request.POST.get('email', '').strip()
-    phone = request.POST.get('phone', '').strip()
-    message = request.POST.get('message', '').strip()
+    # 3. Extracción de datos y saneamiento de longitud
+    name = request.POST.get('name', '').strip()[:150]
+    company_name = request.POST.get('company_name', '').strip()[:150]
+    email = request.POST.get('email', '').strip().lower()[:150]
+    phone = request.POST.get('phone', '').strip()[:50]
+    message = request.POST.get('message', '').strip()[:2000]
     privacy_policy = request.POST.get('privacy_policy')
-    source = request.POST.get('source', '').strip() or 'landing_hummailing'
+    source = (request.POST.get('source', '').strip() or 'landing_hummailing')[:100]
 
-    # 3. Validación
+    # 4. Validación de campos requeridos
     errors = {}
     if not name:
         errors['name'] = 'Por favor ingresa tu nombre.'
@@ -82,12 +102,6 @@ def capture_lead(request):
             'scroll_to_contact': True,
         })
 
-    # 4. Detección de IP y UTMs
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    if x_forwarded:
-        ip_address = x_forwarded.split(',')[0].strip()
-    else:
-        ip_address = request.META.get('REMOTE_ADDR')
 
     utm_source = request.POST.get('utm_source') or request.session.get('utm_source', '')
     utm_medium = request.POST.get('utm_medium') or request.session.get('utm_medium', '')

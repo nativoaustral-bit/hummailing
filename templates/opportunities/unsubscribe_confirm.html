@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Cancelación de Suscripción | Hummailing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#173960',
+                            blue: '#0C6FAC',
+                            orange: '#F59A29',
+                            bg: '#F8FAFC',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-slate-50 p-4 antialiased font-sans">
+    <div class="max-w-md w-full bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center">
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 text-2xl">
+            ⚠️
+        </div>
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Cancelar Suscripción</h1>
+        <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+            ¿Confirmas que deseas dejar de recibir correos y comunicaciones de <strong>{{ contact.organization.trade_name|default:contact.organization.name }}</strong>?
+        </p>
+        <p class="text-xs text-slate-500 mb-6 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+            Dirección a desuscribir: <strong class="text-slate-800">{{ contact.email }}</strong>
+        </p>
+
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="token" value="{{ token }}">
+            <input type="hidden" name="camp" value="{{ camp }}">
+            <div class="flex flex-col gap-3">
+                <button type="submit" class="w-full py-2.5 px-4 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm">
+                    Sí, deseo cancelar mi suscripción
+                </button>
+                <a href="https://humm.cl" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition-colors">
+                    No, conservar mi suscripción
+                </a>
+            </div>
+        </form>
+
+        <div class="pt-6 mt-6 border-t border-slate-100 text-[11px] text-slate-400">
+            Hummailing — Una herramienta de <strong>Humm Co-Creation</strong>
+        </div>
+    </div>
+</body>
+</html>

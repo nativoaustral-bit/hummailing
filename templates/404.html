@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Página no encontrada (404) — Hummailing{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full text-center">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-brand-navy/10 text-brand-navy mb-6">
+            <span class="text-4xl font-extrabold">404</span>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 mb-2">Página no encontrada</h1>
+        <p class="text-slate-600 text-sm mb-8 leading-relaxed">
+            La ruta o recurso que buscas no existe, ha sido movido o no tienes autorización para acceder a él.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{% url 'dashboard' %}" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-brand-blue text-white text-sm font-semibold hover:bg-brand-blue-light transition-colors shadow-sm">
+                Ir al Inicio
+            </a>
+            <a href="https://humm.cl" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors">
+                Soporte Humm
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -102,19 +102,23 @@ def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=Non
             org_name = campaign.organization.trade_name if campaign.organization else "Humm"
             unsub_url = "#"
             if contact:
-                unsub_url = f"{base_site_url}/unsubscribe/direct/?c={contact.id}&camp={campaign.id}"
+                from core.security import generate_unsubscribe_token
+                token = generate_unsubscribe_token(contact)
+                camp_param = f"?camp={campaign.id}" if campaign and campaign.id else ""
+                unsub_url = f"{base_site_url}/unsubscribe/{token}/{camp_param}"
                 
             html += f'<div style="margin-top: 28px; padding: 24px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #64748b;">'
             html += f'<p style="margin: 0;">© {timezone.now().year} {org_name} — Vía Hummailing. Recibes este correo porque estás suscrito a nuestras novedades.</p>'
             html += f'<p style="margin-top: 10px;"><a href="{unsub_url}" style="color: {button_bg}; text-decoration: underline;">Cancelar suscripción / Darse de baja</a></p>'
             html += '</div>'
 
+
     html += '</div>'
     return html
     return html
 
 @shared_task
-def send_campaign_task(campaign_id, test_email=None):
+def send_campaign_task(campaign_id, test_email=None, sender_user_id=None):
     try:
         campaign = Campaign.objects.select_related('organization').get(id=campaign_id)
     except Campaign.DoesNotExist:
@@ -216,3 +220,14 @@ def send_campaign_task(campaign_id, test_email=None):
     campaign.status = 'sent'
     campaign.save(update_fields=['status'])
     logger.info(f"Campaign {campaign_id} dispatch completed. Success: {success_count}, Errors: {error_count}")
+
+    # Integración 04A: Evaluación segura de activación para HCC
+    if success_count > 0:
+        try:
+            from core.models import User
+            from core.services.hcc_service import check_and_trigger_activation
+            sender_user = User.objects.filter(id=sender_user_id).first() if sender_user_id else None
+            check_and_trigger_activation(campaign, sender_user=sender_user)
+        except Exception as hcc_exc:
+            # Regla 15 & 16: Jamás afectar la campaña; log sanitizado sin secretos ni PII
+            logger.warning(f"Aviso operacional: Error en evaluación de activación HCC para campaña {campaign.id}: {type(hcc_exc).__name__}: {str(hcc_exc)[:150]}")

@@ -13,6 +13,7 @@ from .models import Campaign, CampaignLink, CampaignTemplate, CampaignSchedule
 from contacts.models import Segment, Tag, Contact
 from organizations.models import ActivityLog
 from .tasks import send_campaign_task
+from core.permissions import role_required
 
 @login_required
 def campaign_list(request):
@@ -21,7 +22,9 @@ def campaign_list(request):
     return render(request, 'campaigns/list.html', {'campaigns': campaigns})
 
 @login_required
+@role_required(['org_admin', 'campaign_editor'])
 def campaign_create(request):
+
     org = request.organization
     if not org:
         messages.error(request, "No tienes una organización activa seleccionada.")
@@ -79,6 +82,7 @@ def campaign_create(request):
     return render(request, 'campaigns/create.html', {'segments': segments, 'tags': tags})
 
 @login_required
+@role_required(['org_admin', 'campaign_editor'])
 def campaign_duplicate(request, campaign_id):
     org = request.organization
     campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
@@ -102,6 +106,7 @@ def campaign_duplicate(request, campaign_id):
     return redirect('campaigns:editor', campaign_id=new_campaign.id)
 
 @login_required
+@role_required(['org_admin'])
 def campaign_delete(request, campaign_id):
     org = request.organization
     if request.method == 'POST':
@@ -112,7 +117,9 @@ def campaign_delete(request, campaign_id):
     return redirect('campaigns:list')
 
 @login_required
+@role_required(['org_admin', 'campaign_editor'])
 def campaign_editor(request, campaign_id):
+
     org = request.organization
     campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
     
@@ -203,30 +210,32 @@ def campaign_preview(request, campaign_id):
 
 import threading
 
-def dispatch_campaign_task(campaign_id, test_email=None, eta=None):
+def dispatch_campaign_task(campaign_id, test_email=None, eta=None, sender_user_id=None):
     """
     Despacha la tarea de envío vía Celery o ejecuta en hilo en segundo plano
     si Redis/Celery no está activo en el servidor.
     """
     try:
         if eta:
-            send_campaign_task.apply_async((campaign_id,), eta=eta)
+            send_campaign_task.apply_async((campaign_id,), eta=eta, kwargs={'sender_user_id': sender_user_id})
         elif test_email:
             send_campaign_task.delay(campaign_id, test_email=test_email)
         else:
-            send_campaign_task.delay(campaign_id)
+            send_campaign_task.delay(campaign_id, sender_user_id=sender_user_id)
     except Exception as e:
         # Fallback inmediato en segundo plano
         t = threading.Thread(
             target=send_campaign_task,
             args=(campaign_id,),
-            kwargs={'test_email': test_email}
+            kwargs={'test_email': test_email, 'sender_user_id': sender_user_id}
         )
         t.daemon = True
         t.start()
 
 @login_required
+@role_required(['org_admin', 'campaign_editor'])
 def campaign_send(request, campaign_id):
+
     org = request.organization
     campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
     
@@ -303,7 +312,7 @@ def campaign_send(request, campaign_id):
                 campaign.status = 'sending'
                 campaign.sent_at = timezone.now()
                 campaign.save(update_fields=['status', 'sent_at'])
-                dispatch_campaign_task(campaign.id)
+                dispatch_campaign_task(campaign.id, sender_user_id=request.user.id)
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
@@ -325,8 +334,8 @@ import os
 from PIL import Image
 from django.conf import settings
 
-@csrf_exempt
 @login_required
+@role_required(['org_admin', 'campaign_editor'])
 def upload_image(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
@@ -344,47 +353,53 @@ def upload_image(request):
             'message': f'La imagen pesa {(image_file.size / (1024*1024)):.1f} MB. El tamaño máximo permitido es 2 MB.'
         }, status=400)
         
-    # 2. Validar extensión permitida
+    # 2. Validar extensión permitida (Rechazar terminantemente SVG para evitar Stored XSS)
     ext = os.path.splitext(image_file.name)[1].lower()
-    allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.gif', '.bmp', '.ico']
+    if ext == '.svg':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El formato SVG no está permitido por motivos de seguridad. Por favor utiliza PNG, JPG, JPEG o WEBP.'
+        }, status=400)
+        
+    allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp']
     if ext not in allowed_extensions:
         return JsonResponse({
             'status': 'error',
-            'message': 'Formato no soportado. Formatos válidos: PNG, JPG, JPEG, WEBP, SVG o GIF.'
+            'message': 'Formato no soportado. Formatos válidos: PNG, JPG, JPEG o WEBP.'
         }, status=400)
         
-    # 3. Guardar y procesar dimensiones máximas
+    # 3. Validación estricta con Pillow (verificar que sea una imagen raster real y no código camuflado)
+    try:
+        with Image.open(image_file) as test_img:
+            test_img.verify()
+        image_file.seek(0)
+    except Exception:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El archivo subido no es una imagen válida o se encuentra corrupto.'
+        }, status=400)
+        
+    # 4. Guardar y procesar dimensiones máximas
     try:
         logos_dir = settings.MEDIA_ROOT / 'logos'
         os.makedirs(logos_dir, exist_ok=True)
         
-        clean_filename = f"logo_{uuid.uuid4().hex[:10]}{ext}"
+        clean_filename = f"logo_{uuid.uuid4().hex[:12]}{ext}"
         file_path = logos_dir / clean_filename
         
-        if ext in ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp']:
-            try:
-                with Image.open(image_file) as img:
-                    # Dimensiones recomendadas para logos en email (máximo 800px ancho, 400px alto)
-                    max_w, max_h = 800, 400
-                    if img.width > max_w or img.height > max_h:
-                        img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
-                    
-                    # Guardar optimizado
-                    if ext in ['.jpg', '.jpeg']:
-                        img.convert('RGB').save(file_path, 'JPEG', quality=85, optimize=True)
-                    elif ext == '.png':
-                        img.save(file_path, 'PNG', optimize=True)
-                    else:
-                        img.save(file_path)
-            except Exception:
-                with open(file_path, 'wb+') as dest:
-                    for chunk in image_file.chunks():
-                        dest.write(chunk)
-        else:
-            # SVG y otros
-            with open(file_path, 'wb+') as dest:
-                for chunk in image_file.chunks():
-                    dest.write(chunk)
+        with Image.open(image_file) as img:
+            max_w, max_h = 800, 400
+            if img.width > max_w or img.height > max_h:
+                img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
+            
+            if ext in ['.jpg', '.jpeg']:
+                img.convert('RGB').save(file_path, 'JPEG', quality=85, optimize=True)
+            elif ext == '.png':
+                img.save(file_path, 'PNG', optimize=True)
+            elif ext == '.webp':
+                img.save(file_path, 'WEBP', quality=85)
+            else:
+                img.save(file_path)
                     
         host = request.get_host()
         proto = 'https' if not host.startswith('127.0.0.1') and not host.startswith('localhost') else request.scheme
@@ -397,7 +412,9 @@ def upload_image(request):
             'message': 'Imagen cargada y optimizada con éxito.'
         })
     except Exception as e:
+        logger.error(f"Error procesando imagen: {e}")
         return JsonResponse({
             'status': 'error',
-            'message': f'Error al guardar la imagen en el servidor: {str(e)}'
+            'message': f'Error al procesar la imagen en el servidor.'
         }, status=500)
+

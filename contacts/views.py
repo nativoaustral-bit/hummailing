@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from .models import Contact, Tag, Segment
 from organizations.models import SuppressionEntry, ActivityLog
+from core.permissions import role_required
 
 @login_required
 def contact_list(request):
@@ -44,7 +45,9 @@ def contact_list(request):
     return render(request, 'contacts/list.html', context)
 
 @login_required
+@role_required(['org_admin'])
 def contact_create(request):
+
     org = request.organization
     if not org:
         messages.error(request, "No tienes una organización activa seleccionada.")
@@ -96,6 +99,7 @@ def contact_create(request):
     return render(request, 'contacts/create.html')
 
 @login_required
+@role_required(['org_admin'])
 def contact_delete(request, contact_id):
     org = request.organization
     if request.method == 'POST':
@@ -106,6 +110,7 @@ def contact_delete(request, contact_id):
     return redirect('contacts:list')
 
 @login_required
+@role_required(['org_admin'])
 def contact_update(request, contact_id):
     org = request.organization
     contact = get_object_or_404(Contact, id=contact_id, organization=org)
@@ -141,7 +146,9 @@ def contact_update(request, contact_id):
     return render(request, 'contacts/edit.html', {'contact': contact, 'tags_string': tags_string})
 
 @login_required
+@role_required(['org_admin'])
 def import_contacts(request):
+
     org = request.organization
     if not org:
         messages.error(request, "No tienes una organización activa seleccionada.")

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error del Servidor (500) — Hummailing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            navy: '#173960',
+                            blue: '#0C6FAC',
+                            orange: '#F59A29',
+                            bg: '#F8FAFC',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-brand-bg flex items-center justify-center p-4 font-sans text-slate-800 antialiased">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200/80 p-8 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-100 text-amber-600 mb-6">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 mb-2">Error Temporal del Servidor</h1>
+        <p class="text-slate-600 text-sm mb-6 leading-relaxed">
+            Ha ocurrido una inconsistencia interna al procesar tu solicitud. El equipo técnico de Humm ha sido notificado y está revisando el incidente.
+        </p>
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-500 mb-6">
+            Código de referencia: <strong>HTTP 500</strong> · Hummailing Engine
+        </div>
+        <a href="/" class="inline-flex items-center justify-center w-full px-5 py-2.5 rounded-xl bg-brand-blue text-white text-sm font-semibold hover:bg-brand-blue/90 transition-colors shadow-sm">
+            Volver a la Plataforma
+        </a>
+    </div>
+</body>
+</html>

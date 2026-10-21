@@ -371,19 +371,23 @@
                             @click="activeIndex = index">
 
                             <!-- HEADER: Usa el color global del tema -->
-                            <div x-show="block.type === 'header'" class="text-center py-7 px-6 transition-colors"
-                                :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
-                                
-                                <!-- Si tiene Logo definido -->
-                                <div x-show="block.content.logo_url && block.content.logo_url.trim() !== ''" class="flex flex-col items-center justify-center">
-                                    <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto block">
-                                    <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></p>
-                                </div>
+                            <div x-show="block.type === 'header'">
+                                <div class="text-center py-7 px-6 transition-colors"
+                                    :style="'background-color: ' + theme.header_bg + '; color: ' + getHeaderTextColor()">
+                                    
+                                    <!-- Si tiene Logo definido -->
+                                    <div x-show="block.content.logo_url && block.content.logo_url.trim() !== ''" class="flex flex-col items-center justify-center">
+                                        <img :src="block.content.logo_url" :alt="block.content.company_name || 'Logo'" class="max-h-16 max-w-[260px] h-auto object-contain mx-auto block">
+                                        <p x-show="block.content.subtitle" class="text-xs mt-2 font-medium">
+                                            <span :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle"></span>
+                                        </p>
+                                    </div>
 
-                                <!-- Si no tiene Logo, muestra texto institucional -->
-                                <div x-show="!block.content.logo_url || block.content.logo_url.trim() === ''">
-                                    <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
-                                    <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
+                                    <!-- Si no tiene Logo, muestra texto institucional -->
+                                    <div x-show="!block.content.logo_url || block.content.logo_url.trim() === ''">
+                                        <h1 class="text-xl font-black tracking-wider uppercase m-0" :style="'color: ' + getHeaderTextColor()" x-text="block.content.company_name || '{{ current_organization.trade_name|default:current_organization.name }}'"></h1>
+                                        <p class="text-xs mt-1.5 tracking-wide font-medium" :style="'color: ' + getHeaderSubtitleColor()" x-text="block.content.subtitle || 'Comunicación Oficial'"></p>
+                                    </div>
                                 </div>
                             </div>
 

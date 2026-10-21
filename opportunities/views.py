@@ -12,6 +12,9 @@ from contacts.models import Contact
 from organizations.models import SuppressionEntry, ActivityLog
 from core.models import User
 
+from core.permissions import role_required, block_viewer_mutations
+from core.security import validate_unsubscribe_token
+
 @login_required
 def opportunity_list(request):
     org = request.organization
@@ -49,6 +52,7 @@ def opportunity_list(request):
     return render(request, 'opportunities/list.html', context)
 
 @login_required
+@block_viewer_mutations
 def opportunity_detail(request, opp_id):
     org = request.organization
     opportunity = get_object_or_404(Opportunity, id=opp_id, organization=org)
@@ -58,7 +62,17 @@ def opportunity_detail(request, opp_id):
         opportunity.status = request.POST.get('status', opportunity.status)
         opportunity.priority = request.POST.get('priority', opportunity.priority)
         assigned_id = request.POST.get('assigned_to')
-        opportunity.assigned_to = User.objects.filter(id=assigned_id).first() if assigned_id else None
+        
+        # Validar estrictamente que el usuario pertenezca a la misma organización
+        if assigned_id:
+            assigned_user = User.objects.filter(id=assigned_id, organization=org).first()
+            if not assigned_user:
+                messages.error(request, "El usuario asignado no pertenece a tu organización.")
+                return redirect('opportunities:detail', opp_id=opportunity.id)
+            opportunity.assigned_to = assigned_user
+        else:
+            opportunity.assigned_to = None
+            
         opportunity.notes = request.POST.get('notes', '').strip()
         opportunity.next_action = request.POST.get('next_action', '').strip()
         follow_up = request.POST.get('follow_up_date', '').strip()
@@ -122,34 +136,44 @@ def redirect_tracked_link(request, token):
 
 def unsubscribe_contact(request, token):
     """
-    Ruta pública para cancelar suscripción.
+    Ruta pública para cancelar suscripción con token criptográfico firmado sin PII.
+    - GET: Valida token y muestra pantalla de confirmación (no muta estado, anti-scanners).
+    - POST: Valida token, exige CSRF, ejecuta la baja y agrega a SuppressionEntry.
     """
-    # Token contiene org_id y contact_id
-    contact_id = request.GET.get('c')
-    campaign_id = request.GET.get('camp')
-    
-    contact = Contact.objects.filter(id=contact_id).first() if contact_id else None
-    campaign = Campaign.objects.filter(id=campaign_id).first() if campaign_id else None
-    
-    if contact:
+    contact, error_msg = validate_unsubscribe_token(token)
+    if not contact:
+        return render(request, 'opportunities/unsubscribe_invalid.html', {'error': error_msg}, status=400)
+        
+    if request.method == 'POST':
+        # Proceder con la desuscripción efectiva
         contact.status = 'unsubscribed'
         contact.save(update_fields=['status'])
         
-        # Registrar en la lista de supresiones
+        # Registrar en SuppressionEntry exclusivamente para la organización del contacto
         SuppressionEntry.objects.get_or_create(
             organization=contact.organization,
             email=contact.email,
             defaults={'reason': 'unsub'}
         )
         
-        if campaign:
-            TrackingEvent.objects.create(
-                campaign=campaign,
-                contact=contact,
-                event_type='unsub',
-                ip_address=request.META.get('REMOTE_ADDR')
-            )
-            
+        # Registrar evento de seguimiento si se especifica la campaña
+        campaign_id = request.POST.get('camp') or request.GET.get('camp')
+        if campaign_id:
+            campaign = Campaign.objects.filter(id=campaign_id, organization=contact.organization).first()
+            if campaign:
+                TrackingEvent.objects.create(
+                    campaign=campaign,
+                    contact=contact,
+                    event_type='unsub',
+                    ip_address=request.META.get('REMOTE_ADDR')
+                )
+                
         return render(request, 'opportunities/unsubscribe_success.html', {'contact': contact})
         
-    return render(request, 'opportunities/unsubscribe_success.html', {'contact': None})
+    # GET: Pantalla de confirmación (anti-scanners no modifican estado)
+    return render(request, 'opportunities/unsubscribe_confirm.html', {
+        'contact': contact,
+        'token': token,
+        'camp': request.GET.get('camp', '')
+    })
+

@@ -21,23 +21,32 @@ env = environ.Env(
     DEBUG=(bool, True),
     RESEND_API_KEY=(str, 're_your_resend_api_key_here')
 )
-env_file = BASE_DIR / '.env'
-if env_file.exists():
-    environ.Env.read_env(env_file)
+# Cargar .env prioritariamente desde ubicación privada fuera del DocumentRoot en HostGator
+private_env_file = Path('/home1/paulocis/private/hummailing_data/.env')
+local_env_file = BASE_DIR / '.env'
+if private_env_file.exists():
+    environ.Env.read_env(private_env_file)
+elif local_env_file.exists():
+    environ.Env.read_env(local_env_file)
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-!3ob)ufig8h*%ozwfv33$pa$(bv&bw*a-8oyj$l#_g_z^se47c')
 
 DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[
+    'mailing.humm.cl',
+    'www.mailing.humm.cl',
+    'humm.cl',
+    'www.humm.cl',
+    'localhost',
+    '127.0.0.1',
+    'testserver',
+])
 # Asegurar dominios de producción siempre presentes
 for _host in ['mailing.humm.cl', 'www.mailing.humm.cl', 'humm.cl', 'www.humm.cl', 'localhost', '127.0.0.1', 'testserver']:
     if _host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_host)
-
 
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'https://mailing.humm.cl',
@@ -47,10 +56,16 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'http://127.0.0.1:8000',
 ])
 
-
+# Directivas de seguridad y cookies seguras
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -101,21 +116,47 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+# Priorizar ubicación privada fuera del DocumentRoot
+private_db_path = Path('/home1/paulocis/private/hummailing_data/db.sqlite3')
+db_path_env = env('DB_PATH', default=None)
+if db_path_env:
+    DEFAULT_DB_PATH = Path(db_path_env)
+elif private_db_path.parent.exists():
+    DEFAULT_DB_PATH = private_db_path
+else:
+    DEFAULT_DB_PATH = BASE_DIR / 'db.sqlite3'
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DEFAULT_DB_PATH,
+        'OPTIONS': {
+            'timeout': 20,
+        }
     }
 }
 
+# Cache compartido basado en archivos (FileBasedCache) fuera del DocumentRoot
+private_cache_dir = Path('/home1/paulocis/private/hummailing_cache')
+if private_cache_dir.exists():
+    CACHE_DIR = private_cache_dir
+else:
+    CACHE_DIR = BASE_DIR / 'tmp' / 'cache'
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': str(CACHE_DIR),
+        'TIMEOUT': 3600,
+        'OPTIONS': {
+            'MAX_ENTRIES': 10000
+        }
+    }
+}
 
 # Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -131,22 +172,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = 'es-es'
-
 TIME_ZONE = 'America/Santiago'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -174,7 +206,6 @@ CELERY_TASK_EAGER_PROPAGATES = False
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Resend API & Email Backend
-import os
 RESEND_API_KEY = env('RESEND_API_KEY', default='re_your_resend_api_key_here')
 
 # Email Configuration
@@ -187,4 +218,65 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default=RESEND_API_KEY)
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='Hummailing <hola@humm.cl>')
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
+# Logging seguro en directorio privado
+private_logs_dir = Path('/home1/paulocis/logs')
+if private_logs_dir.exists():
+    LOGS_DIR = private_logs_dir
+else:
+    LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s',
+            'datefmt': '%d/%b/%Y %H:%M:%S'
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'hummailing.log',
+            'formatter': 'standard',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'campaigns': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'core': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'organizations': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+
+
+
+
+# Humm Control Center (HCC) Integration v0.1
+HCC_API_URL = env('HCC_API_URL', default='https://control.humm.cl/api/v1/events/')
+HCC_API_KEY = env('HCC_API_KEY', default='')
+HCC_READ_TIMEOUT = env.float('HCC_READ_TIMEOUT', default=3.0)

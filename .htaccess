@@ -1,14 +1,44 @@
-Options +ExecCGI +FollowSymLinks
+Options -Indexes +ExecCGI +FollowSymLinks
 AddHandler cgi-script .py .cgi
 DirectoryIndex passenger_wsgi.py
 
 RewriteEngine On
 
-# 1. Servir archivos estáticos y media directamente si existen físicamente
-RewriteCond %{REQUEST_URI} ^/(static|media)/ [NC]
+# ------------------------------------------------------------------------------
+# 1. BLOQUEO ESTRICTO DE SEGURIDAD (HTTP 403)
+# ------------------------------------------------------------------------------
+# Bloquear acceso a archivos sensibles por extensión
+<FilesMatch "(?i)\.(sqlite3|sqlite3-.*|db|log|env|sh|sql|txt|md|bak|backup|tar|gz|zip|json|conf|ini|yml|yaml)$">
+    Require all denied
+</FilesMatch>
+
+# Bloquear explícitamente archivos clave por nombre
+<FilesMatch "(?i)^(db\.sqlite3.*|celery\.log|scheduled_runs\.log|requirements\.txt|manage\.py|\.env.*)$">
+    Require all denied
+</FilesMatch>
+
+# Bloquear carpetas ocultas y archivos especiales
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+RewriteRule (?i)^requirements\.txt$ - [F,L]
+RewriteRule (?i)^.*\.log$ - [F,L]
+RewriteRule (?i)^db\.sqlite3.*$ - [F,L]
+RewriteRule (?i)^manage\.py$ - [F,L]
+
+# ------------------------------------------------------------------------------
+# 2. SERVIR EXCLUSIVAMENTE STATIC Y MEDIA PÚBLICA PERMITIDA
+# ------------------------------------------------------------------------------
+RewriteCond %{REQUEST_URI} ^/static/ [NC]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# 2. Redirigir todas las demás peticiones a Django via CGI
+RewriteCond %{REQUEST_URI} ^/media/ [NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|webp|gif|ico)$ [NC]
+RewriteRule ^ - [L]
+
+# ------------------------------------------------------------------------------
+# 3. REDIRIGIR TODO LO DEMÁS A DJANGO VIA PASSENGER WSGI
+# ------------------------------------------------------------------------------
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ passenger_wsgi.py/$1 [QSA,L]
+

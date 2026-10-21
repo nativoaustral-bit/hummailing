@@ -1,5 +1,17 @@
+import os
+import shutil
+import tempfile
+import concurrent.futures
+from io import BytesIO
+from PIL import Image
+
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
+from django.core.cache import cache
+
+from core.security import create_unsubscribe_token, validate_unsubscribe_token
 from organizations.models import Organization, SuppressionEntry
 from core.models import User, Lead
 from contacts.models import Contact, Tag
@@ -60,6 +72,24 @@ class HummailingMultiTenantTests(TestCase):
             organization=self.org_alpha,
             role="org_admin",
             must_change_password=True
+        )
+
+        self.editor_alpha = User.objects.create_user(
+            username="editor_alpha",
+            email="editor@alpha.cl",
+            password="password123",
+            organization=self.org_alpha,
+            role="campaign_editor",
+            must_change_password=False
+        )
+
+        self.viewer_alpha = User.objects.create_user(
+            username="viewer_alpha",
+            email="viewer@alpha.cl",
+            password="password123",
+            organization=self.org_alpha,
+            role="viewer",
+            must_change_password=False
         )
 
     def test_contact_email_isolation_between_organizations(self):
@@ -269,4 +299,233 @@ class HummailingMultiTenantTests(TestCase):
         response = self.client.get(reverse('organizations:lead_list'))
         self.assertNotEqual(response.status_code, 200)
 
+    def test_unsubscribe_token_without_pii_and_confirmation_flow(self):
+        """Verifica que el token de desuscripción no contenga PII, que GET no mute estado y POST sí."""
+        contact = Contact.objects.create(
+            organization=self.org_alpha,
+            email="baja.segura@cliente.cl",
+            first_name="Baja"
+        )
+        token = create_unsubscribe_token(contact.id, self.org_alpha.id)
+        
+        # 1. Verificar ausencia de PII en la URL/token
+        self.assertNotIn("baja.segura@cliente.cl", token)
+        self.assertNotIn("baja", token.lower())
+        
+        # 2. GET muestra pantalla de confirmación sin mutar la base de datos
+        url = reverse('opportunities:unsubscribe', kwargs={'token': token})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Cancelar Suscripción")
+        contact.refresh_from_db()
+        self.assertEqual(contact.status, 'active')
+        
+        # 3. POST con CSRF ejecuta la desuscripción efectiva
+        post_response = self.client.post(url, follow=True)
+        self.assertEqual(post_response.status_code, 200)
+        self.assertContains(post_response, "Te has dado de baja exitosamente")
+        contact.refresh_from_db()
+        self.assertEqual(contact.status, 'unsubscribed')
+        self.assertTrue(SuppressionEntry.objects.filter(organization=self.org_alpha, email="baja.segura@cliente.cl").exists())
 
+        # 4. Token alterado/corrupto es rechazado
+        bad_response = self.client.get(reverse('opportunities:unsubscribe', kwargs={'token': token + 'invalid'}))
+        self.assertEqual(bad_response.status_code, 400)
+
+        # 5. Token con discrepancia cross-tenant es rechazado
+        cross_token = create_unsubscribe_token(contact.id, self.org_beta.id)
+        cross_response = self.client.get(reverse('opportunities:unsubscribe', kwargs={'token': cross_token}))
+        self.assertEqual(cross_response.status_code, 400)
+
+    from unittest.mock import patch
+
+    @patch('core.views.send_mail')
+    @patch('core.views.Lead.objects.create')
+    def test_concurrent_rate_limiting_on_lead_capture(self, mock_lead_create, mock_send_mail):
+        """Verifica que solicitudes concurrentes/paralelas no permitan sobrepasar el límite de 5 req/h."""
+        cache.clear()
+        url = reverse('capture_lead')
+        test_ip = '198.51.100.77'
+        
+        def send_lead(i):
+            client = Client()
+            payload = {
+                'name': f'Lead Concurrente {i}',
+                'company_name': 'Test Corp',
+                'email': f'lead_{i}@testcorp.cl',
+                'phone': '+56911223344',
+                'privacy_policy': 'on'
+            }
+            return client.post(
+                url,
+                payload,
+                REMOTE_ADDR=test_ip,
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+                HTTP_ACCEPT='application/json'
+            )
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(send_lead, i) for i in range(12)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+        status_codes = [r.status_code for r in results]
+        success_count = status_codes.count(200)
+        rate_limited_count = status_codes.count(429)
+        
+        self.assertEqual(success_count, 5, f"Esperado exactamente 5 solicitudes exitosas, obtenido {success_count}")
+        self.assertEqual(rate_limited_count, 7, f"Esperado 7 solicitudes bloqueadas por HTTP 429, obtenido {rate_limited_count}")
+
+    def test_viewer_role_blocked_on_all_mutations(self):
+        """Verifica que el rol 'viewer' (solo lectura) tenga bloqueada cualquier mutación de estado con 403."""
+        contact = Contact.objects.create(organization=self.org_alpha, email="solo_lectura@alpha.cl", first_name="Solo")
+        campaign = Campaign.objects.create(organization=self.org_alpha, name="Campaña Lectura", subject="Sub")
+        opp = Opportunity.objects.create(organization=self.org_alpha, contact=contact, title="Oportunidad Lectura")
+
+        self.client.login(username="viewer_alpha", password="password123")
+
+        # Intentos de mutación en contactos
+        r = self.client.post(reverse('contacts:create'), {'email': 'nuevo@alpha.cl', 'first_name': 'Nuevo'})
+        self.assertEqual(r.status_code, 403)
+        
+        r = self.client.post(reverse('contacts:edit', kwargs={'contact_id': contact.id}), {'first_name': 'Modificado'})
+        self.assertEqual(r.status_code, 403)
+        
+        r = self.client.post(reverse('contacts:delete', kwargs={'contact_id': contact.id}))
+        self.assertEqual(r.status_code, 403)
+        
+        r = self.client.post(reverse('contacts:import'))
+        self.assertEqual(r.status_code, 403)
+
+        # Intentos de mutación en campañas
+        r = self.client.post(reverse('campaigns:create'), {'name': 'Hack Camp', 'subject': 'Sub'})
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('campaigns:editor', kwargs={'campaign_id': campaign.id}), '{"blocks": []}', content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('campaigns:delete', kwargs={'campaign_id': campaign.id}))
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('campaigns:send', kwargs={'campaign_id': campaign.id}), '{}', content_type="application/json")
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('campaigns:upload_image'))
+        self.assertEqual(r.status_code, 403)
+
+        # Intento de mutación en oportunidades
+        r = self.client.post(reverse('opportunities:detail', kwargs={'opp_id': opp.id}), {'status': 'won'})
+        self.assertEqual(r.status_code, 403)
+
+    def test_campaign_editor_role_boundaries(self):
+        """Verifica que campaign_editor pueda editar campañas pero no mutar contactos ni eliminar campañas."""
+        contact = Contact.objects.create(organization=self.org_alpha, email="editor_test@alpha.cl")
+        campaign = Campaign.objects.create(organization=self.org_alpha, name="Campaña Editor", subject="Sub")
+
+        self.client.login(username="editor_alpha", password="password123")
+
+        # Restringido en contactos (403)
+        r = self.client.post(reverse('contacts:create'), {'email': 'prohibido@alpha.cl'})
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('contacts:delete', kwargs={'contact_id': contact.id}))
+        self.assertEqual(r.status_code, 403)
+
+        # Restringido en eliminación de campañas (403)
+        r = self.client.post(reverse('campaigns:delete', kwargs={'campaign_id': campaign.id}))
+        self.assertEqual(r.status_code, 403)
+
+        # Autorizado en creación y edición de campañas
+        r = self.client.post(reverse('campaigns:create'), {'name': 'Campaña Autorizada', 'subject': 'Asunto'})
+        self.assertEqual(r.status_code, 302)
+
+        r = self.client.post(reverse('campaigns:editor', kwargs={'campaign_id': campaign.id}), '{"blocks": []}', content_type="application/json")
+        self.assertEqual(r.status_code, 200)
+
+    def test_cross_tenant_isolation_rejections(self):
+        """Verifica que un usuario de la Organización Alpha no pueda alterar recursos de Beta ni asignar usuarios de Beta."""
+        contact_beta = Contact.objects.create(organization=self.org_beta, email="beta_privado@beta.cl")
+        campaign_beta = Campaign.objects.create(organization=self.org_beta, name="Camp Beta", subject="Sub")
+        contact_alpha = Contact.objects.create(organization=self.org_alpha, email="alpha_lead@alpha.cl")
+        opp_alpha = Opportunity.objects.create(organization=self.org_alpha, contact=contact_alpha, title="Opp Alpha")
+
+        self.client.login(username="user_alpha", password="password123")
+
+        # No puede editar ni borrar contactos de otra org (404)
+        r = self.client.post(reverse('contacts:edit', kwargs={'contact_id': contact_beta.id}), {'first_name': 'Infiltrado'})
+        self.assertEqual(r.status_code, 404)
+
+        r = self.client.post(reverse('contacts:delete', kwargs={'contact_id': contact_beta.id}))
+        self.assertEqual(r.status_code, 404)
+
+        # No puede editar ni borrar campañas de otra org (404)
+        r = self.client.post(reverse('campaigns:editor', kwargs={'campaign_id': campaign_beta.id}), '{"blocks": []}', content_type="application/json")
+        self.assertEqual(r.status_code, 404)
+
+        r = self.client.post(reverse('campaigns:delete', kwargs={'campaign_id': campaign_beta.id}))
+        self.assertEqual(r.status_code, 404)
+
+        # No puede asignar una oportunidad propia a un usuario de otra organización
+        r = self.client.post(reverse('opportunities:detail', kwargs={'opp_id': opp_alpha.id}), {
+            'status': 'in_progress',
+            'assigned_to': self.user_beta.id
+        }, follow=True)
+        opp_alpha.refresh_from_db()
+        self.assertNotEqual(opp_alpha.assigned_to_id, self.user_beta.id)
+        self.assertContains(r, "El usuario asignado no pertenece a tu organización")
+
+    def test_image_upload_security_svg_rejection_and_raster_validation(self):
+        """Verifica que la subida de imágenes rechace SVG y archivos corruptos, y acepte imágenes raster válidas."""
+        self.client.login(username="user_alpha", password="password123")
+        url = reverse('campaigns:upload_image')
+
+        # 1. Rechazar SVG terminantemente con 400
+        svg_file = SimpleUploadedFile("malicious.svg", b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>", content_type="image/svg+xml")
+        r = self.client.post(url, {'image': svg_file})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("SVG no está permitido", r.json()['message'])
+
+        # 2. Rechazar archivo falso disfrazado con extensión png con 400
+        fake_img = SimpleUploadedFile("exploit.png", b"<?php echo 'pwned'; ?>", content_type="image/png")
+        r = self.client.post(url, {'image': fake_img})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("no es una imagen válida", r.json()['message'])
+
+        # 3. Aceptar imagen raster válida (PNG 1x1)
+        img_buffer = BytesIO()
+        test_img = Image.new('RGB', (10, 10), color='blue')
+        test_img.save(img_buffer, format='PNG')
+        img_buffer.seek(0)
+        valid_png = SimpleUploadedFile("test_logo.png", img_buffer.getvalue(), content_type="image/png")
+        r = self.client.post(url, {'image': valid_png})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['status'], 'success')
+
+    def test_backup_and_restore_isolated_cycle(self):
+        """Verifica el ciclo completo: backup consistente -> transferencia off-site -> validación SHA-256 -> restore aislado."""
+        temp_dir = tempfile.mkdtemp()
+        temp_offsite_dir = tempfile.mkdtemp()
+        try:
+            # 1. Ejecutar backup con copia off-site automática
+            backup_zip_path = call_command('backup_data', dest=temp_dir, offsite_dest=temp_offsite_dir)
+            self.assertTrue(os.path.exists(backup_zip_path))
+            self.assertTrue(backup_zip_path.endswith('.zip'))
+
+            # 2. Verificar que la copia off-site exista y coincida exactamente en checksum SHA-256
+            zip_filename = os.path.basename(backup_zip_path)
+            offsite_file = os.path.join(temp_offsite_dir, zip_filename)
+            self.assertTrue(os.path.exists(offsite_file))
+            
+            from core.management.commands.backup_data import sha256_file
+            self.assertEqual(sha256_file(backup_zip_path), sha256_file(offsite_file))
+
+            # 3. Ejecutar comando de restauración aislada y dry-run utilizando el archivo transferido off-site
+            result = call_command('restore_data', backup_file=offsite_file, isolated=True, dry_run=True)
+            self.assertEqual(result, "OK")
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            shutil.rmtree(temp_offsite_dir, ignore_errors=True)
+
+
+
+
+from .test_hcc_integration import HummailingHCCIntegrationTests

@@ -60,3 +60,5 @@ Thumbs.db
 
 # IDE brain / temporary logs
 .system_generated/
+tmp/
+backups/
