@@ -17,6 +17,12 @@ def role_required(allowed_roles):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
+                is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or 'application/json' in request.headers.get('accept', '')
+                if is_ajax:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Tu sesión ha expirado o no estás autenticado. Por favor inicia sesión en otra pestaña y vuelve a guardar.'
+                    }, status=200)
                 return redirect('login')
                 
             # Humm Admin / Superuser tiene permiso global

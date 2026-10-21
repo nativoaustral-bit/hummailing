@@ -1,5 +1,7 @@
-#!/home1/paulocis/MAILING/venv/bin/python
+#!/home1/paulocis/MAILING/venv/bin/python -u
 import sys, os
+
+os.environ['PYTHONUNBUFFERED'] = '1'
 
 sys.path.insert(0, '/home1/paulocis/MAILING')
 
@@ -9,8 +11,17 @@ from config.wsgi import application as _application
 
 def application(environ, start_response):
     environ['SCRIPT_NAME'] = ''
-    if environ.get('HTTP_X_FORWARDED_PROTO') == 'https' or environ.get('HTTPS') in ('on', '1') or environ.get('HTTP_X_FORWARDED_SSL') == 'on':
+    is_https = (
+        environ.get('HTTP_X_FORWARDED_PROTO') == 'https' or
+        environ.get('HTTPS') in ('on', '1') or
+        environ.get('HTTP_X_FORWARDED_SSL') == 'on' or
+        environ.get('SERVER_PORT') == '443'
+    )
+    if is_https:
         environ['wsgi.url_scheme'] = 'https'
+        environ['HTTP_X_FORWARDED_PROTO'] = 'https'
+        environ['HTTPS'] = 'on'
+
     try:
         return _application(environ, start_response)
     except Exception as exc:
@@ -42,4 +53,20 @@ def application(environ, start_response):
 
 if __name__ == '__main__' or 'GATEWAY_INTERFACE' in os.environ:
     from wsgiref.handlers import CGIHandler
-    CGIHandler().run(application)
+
+    class FlushedCGIHandler(CGIHandler):
+        def finish_response(self):
+            super().finish_response()
+            try:
+                self.stdout.flush()
+            except Exception:
+                pass
+
+    try:
+        FlushedCGIHandler().run(application)
+    finally:
+        try:
+            sys.stdout.flush()
+            sys.stderr.flush()
+        except Exception:
+            pass

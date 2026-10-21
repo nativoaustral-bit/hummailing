@@ -119,7 +119,6 @@ def campaign_delete(request, campaign_id):
         messages.success(request, f"Campaña '{name}' eliminada.")
     return redirect('campaigns:list')
 
-@login_required
 @role_required(['org_admin', 'campaign_editor'])
 def campaign_editor(request, campaign_id):
     try:
@@ -258,7 +257,6 @@ def dispatch_campaign_task(campaign_id, test_email=None, eta=None, sender_user_i
         t.daemon = True
         t.start()
 
-@login_required
 @role_required(['org_admin', 'campaign_editor'])
 def campaign_send(request, campaign_id):
 

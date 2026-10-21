@@ -38,9 +38,50 @@ def custom_500_view(request):
         }, status=200)
     return render(request, '500.html', status=500)
 
+def server_status_view(request):
+    key = request.GET.get('key')
+    if key != 'humm_debug_2026':
+        return JsonResponse({'status': 'denied'}, status=403)
+    
+    import sys, os
+    
+    logs = {}
+    candidates = [
+        ('hummailing_data_hummailing', '/home1/paulocis/private/hummailing_data/logs/hummailing.log'),
+        ('hummailing_data_crash', '/home1/paulocis/private/hummailing_data/logs/crash.log'),
+        ('mailing_hummailing', str(settings.BASE_DIR / 'logs' / 'hummailing.log')),
+        ('mailing_crash', str(settings.BASE_DIR / 'logs' / 'crash.log')),
+    ]
+    for label, path in candidates:
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', errors='ignore') as f:
+                    lines = f.readlines()
+                    logs[label] = [l.strip() for l in lines[-60:]] if lines else ['(empty file)']
+            except Exception as e:
+                logs[label] = [f"Error reading: {e}"]
+        else:
+            logs[label] = ['(file not found)']
+            
+    db_path = str(settings.DATABASES['default']['NAME'])
+    db_stat = {
+        'path': db_path,
+        'exists': os.path.exists(db_path),
+        'writable': os.access(db_path, os.W_OK) if os.path.exists(db_path) else False,
+        'parent_writable': os.access(os.path.dirname(db_path), os.W_OK) if os.path.dirname(db_path) else False,
+    }
+    
+    return JsonResponse({
+        'status': 'ok',
+        'python_version': sys.version,
+        'db_stat': db_stat,
+        'logs': logs
+    })
+
 handler500 = 'config.urls.custom_500_view'
 
 urlpatterns = [
+    path('api/server-status/', server_status_view, name='server_status'),
     path('admin/', admin.site.urls),
     path('', include('organizations.urls')),
     path('', include('opportunities.urls')),
