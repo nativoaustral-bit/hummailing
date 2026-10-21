@@ -1,5 +1,6 @@
 import json
 import uuid
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -14,6 +15,8 @@ from contacts.models import Segment, Tag, Contact
 from organizations.models import ActivityLog
 from .tasks import send_campaign_task
 from core.permissions import role_required
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def campaign_list(request):
@@ -148,21 +151,26 @@ def campaign_editor(request, campaign_id):
                     service_interest = block.get('content', {}).get('service_interest', text)
                     
                     if url and url != '#':
-                        link_obj, created = CampaignLink.objects.get_or_create(
-                            campaign=campaign,
-                            original_url=url,
-                            defaults={
-                                'link_type': link_type,
-                                'service_interest': service_interest,
-                                'token': uuid.uuid4().hex[:12]
-                            }
-                        )
-                        if not link_obj.token:
-                            link_obj.token = uuid.uuid4().hex[:12]
-                            link_obj.save()
+                        link_obj = CampaignLink.objects.filter(campaign=campaign, original_url=url).first()
+                        if not link_obj:
+                            link_obj = CampaignLink.objects.create(
+                                campaign=campaign,
+                                original_url=url,
+                                link_type=link_type,
+                                service_interest=service_interest,
+                                token=uuid.uuid4().hex[:12]
+                            )
+                        else:
+                            # Actualizar tipo de enlace y token si faltara
+                            link_obj.link_type = link_type
+                            link_obj.service_interest = service_interest
+                            if not link_obj.token:
+                                link_obj.token = uuid.uuid4().hex[:12]
+                            link_obj.save(update_fields=['link_type', 'service_interest', 'token'])
                             
             return JsonResponse({'status': 'success'})
         except Exception as e:
+            logger.error(f"Error guardando contenido de campaña {campaign_id}: {e}", exc_info=True)
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
             
     raw_blocks = campaign.content_blocks or []

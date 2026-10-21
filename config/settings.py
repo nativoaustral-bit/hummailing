@@ -50,11 +50,22 @@ for _host in ['mailing.humm.cl', 'www.mailing.humm.cl', 'humm.cl', 'www.humm.cl'
 
 CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
     'https://mailing.humm.cl',
+    'http://mailing.humm.cl',
+    'https://www.mailing.humm.cl',
+    'http://www.mailing.humm.cl',
     'https://humm.cl',
+    'http://humm.cl',
     'https://www.humm.cl',
+    'http://www.humm.cl',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'http://localhost',
+    'http://127.0.0.1',
 ])
+
+# Soporte para proxy reverso SSL (HostGator / Apache / Passenger)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 # Directivas de seguridad y cookies seguras
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=not DEBUG)

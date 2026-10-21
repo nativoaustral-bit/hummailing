@@ -40,8 +40,8 @@
         </div>
         
         <div class="flex items-center space-x-2">
-            <button @click="saveCampaign"
-                class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm flex items-center space-x-1.5">
+            <button id="btn-save-campaign" @click="saveCampaign"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm flex items-center space-x-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
                 <span>💾</span>
                 <span>Guardar Cambios</span>
             </button>
@@ -750,32 +750,60 @@
                 event.target.value = '';
             },
 
-            saveCampaign() {
-                const button = event.target;
-                const originalText = button.innerText;
-                button.innerText = 'Guardando...';
+            getCsrfToken() {
+                const match = document.cookie.match(/csrftoken=([^;]+)/);
+                return match ? match[1] : '{{ csrf_token }}';
+            },
 
-                fetch('', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ 
-                        theme: this.theme,
-                        blocks: this.blocks 
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        button.innerText = '¡Guardado!';
-                        setTimeout(() => button.innerText = originalText, 2000);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error de conexión al guardar.');
-                        button.innerText = originalText;
+            async saveCampaign() {
+                const button = document.getElementById('btn-save-campaign');
+                const originalHtml = button ? button.innerHTML : '<span>💾</span><span>Guardar Cambios</span>';
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = '<span>⏳</span><span>Guardando...</span>';
+                }
+
+                try {
+                    const response = await fetch('{% url "campaigns:editor" campaign.id %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': this.getCsrfToken()
+                        },
+                        body: JSON.stringify({ 
+                            theme: this.theme,
+                            blocks: this.blocks 
+                        })
                     });
+
+                    const data = await response.json().catch(() => null);
+
+                    if (!response.ok) {
+                        const msg = (data && data.message) ? data.message : `Error del servidor (código HTTP ${response.status})`;
+                        throw new Error(msg);
+                    }
+
+                    if (data && data.status === 'success') {
+                        if (button) {
+                            button.innerHTML = '<span>✅</span><span>¡Guardado!</span>';
+                            setTimeout(() => {
+                                button.innerHTML = originalHtml;
+                                button.disabled = false;
+                            }, 2000);
+                        }
+                    } else {
+                        throw new Error((data && data.message) || 'Error desconocido al guardar.');
+                    }
+                } catch (error) {
+                    console.error('Error al guardar campaña:', error);
+                    alert('No se pudo guardar la campaña: ' + error.message);
+                    if (button) {
+                        button.innerHTML = originalHtml;
+                        button.disabled = false;
+                    }
+                }
             },
 
             sendTestEmail() {
@@ -784,15 +812,23 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': this.getCsrfToken()
                     },
                     body: JSON.stringify({ is_test: true, test_email: this.testEmail })
                 })
-                .then(response => response.json())
+                .then(async response => {
+                    const data = await response.json().catch(() => null);
+                    if (!response.ok) {
+                        throw new Error((data && data.message) || `Error HTTP ${response.status}`);
+                    }
+                    return data;
+                })
                 .then(data => {
                     this.testSending = false;
                     this.showTestModal = false;
-                    alert(data.message || 'Correo de prueba enviado con éxito.');
+                    alert((data && data.message) || 'Correo de prueba enviado con éxito.');
                 })
                 .catch(error => {
                     this.testSending = false;
@@ -813,19 +849,25 @@
                     }
                 }
 
-                fetch('', {
+                // 1. Guardar primero el estado actual del diseño
+                fetch('{% url "campaigns:editor" campaign.id %}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': this.getCsrfToken()
                     },
                     body: JSON.stringify({ 
                         theme: this.theme,
                         blocks: this.blocks 
                     })
                 })
-                    .then(response => {
-                        if (!response.ok) throw new Error("Error al guardar diseño.");
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+                        if (!response.ok) {
+                            throw new Error((data && data.message) || `Error HTTP ${response.status} al guardar diseño.`);
+                        }
 
                         const payload = {};
                         if (this.sendMode === 'scheduled') {
@@ -838,20 +880,25 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRFToken': '{{ csrf_token }}'
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': this.getCsrfToken()
                             },
                             body: JSON.stringify(payload)
                         });
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
+                    .then(async response => {
+                        const data = await response.json().catch(() => null);
+                        if (!response.ok) {
+                            throw new Error((data && data.message) || `Error HTTP ${response.status} al procesar envío.`);
+                        }
+                        if (data && data.status === 'success') {
                             this.sendingState = 'done';
                             setTimeout(() => {
                                 window.location.href = '{% url "campaigns:list" %}';
                             }, 1000);
                         } else {
-                            throw new Error(data.message || "Error al procesar envío.");
+                            throw new Error((data && data.message) || "Error al procesar envío.");
                         }
                     })
                     .catch(error => {

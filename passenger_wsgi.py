@@ -9,6 +9,8 @@ from config.wsgi import application as _application
 
 def application(environ, start_response):
     environ['SCRIPT_NAME'] = ''
+    if environ.get('HTTP_X_FORWARDED_PROTO') == 'https' or environ.get('HTTPS') in ('on', '1') or environ.get('HTTP_X_FORWARDED_SSL') == 'on':
+        environ['wsgi.url_scheme'] = 'https'
     return _application(environ, start_response)
 
 if __name__ == '__main__' or 'GATEWAY_INTERFACE' in os.environ:
