@@ -21,8 +21,16 @@ logger = logging.getLogger(__name__)
 @login_required
 def campaign_list(request):
     org = request.organization
-    campaigns = Campaign.objects.filter(organization=org).prefetch_related('schedules').order_by('-created_at') if org else Campaign.objects.none()
-    return render(request, 'campaigns/list.html', {'campaigns': campaigns})
+    campaigns = Campaign.objects.filter(organization=org).select_related('target_tag', 'segment').prefetch_related('schedules').order_by('-created_at') if org else Campaign.objects.none()
+    tags = list(Tag.objects.filter(organization=org).values('id', 'name')) if org else []
+    for t in tags:
+        t['count'] = Contact.objects.filter(organization=org, status='active', tags__id=t['id']).count()
+    total_active_contacts = Contact.objects.filter(organization=org, status='active').count() if org else 0
+    return render(request, 'campaigns/list.html', {
+        'campaigns': campaigns,
+        'tags': tags,
+        'total_active_contacts': total_active_contacts,
+    })
 
 @login_required
 @role_required(['org_admin', 'campaign_editor'])
@@ -90,16 +98,27 @@ def campaign_duplicate(request, campaign_id):
     org = request.organization
     campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
     
+    new_name = f"Copia de {campaign.name}"
+    target_tag = campaign.target_tag
+    
+    if request.method == 'POST':
+        custom_name = request.POST.get('name', '').strip()
+        if custom_name:
+            new_name = custom_name
+        tag_id = request.POST.get('target_tag')
+        if tag_id is not None:
+            target_tag = Tag.objects.filter(id=tag_id, organization=org).first() if tag_id else None
+            
     new_campaign = Campaign.objects.create(
         organization=org,
-        name=f"Copia de {campaign.name}",
+        name=new_name,
         subject=campaign.subject,
         preheader=campaign.preheader,
         sender_name=campaign.sender_name,
         sender_email=campaign.sender_email,
         reply_to=campaign.reply_to,
         segment=campaign.segment,
-        target_tag=campaign.target_tag,
+        target_tag=target_tag,
         content_blocks=campaign.content_blocks,
         status='draft',
         created_by=request.user
@@ -231,12 +250,59 @@ def campaign_editor(request, campaign_id):
         } for s in existing_schedules
     ]))
     
+    tags = list(Tag.objects.filter(organization=org).values('id', 'name'))
+    for t in tags:
+        t['count'] = Contact.objects.filter(organization=org, status='active', tags__id=t['id']).count()
+    total_active_contacts = Contact.objects.filter(organization=org, status='active').count()
+    tags_json = mark_safe(json.dumps(tags))
+    
     return render(request, 'campaigns/editor.html', {
         'campaign': campaign,
         'blocks_json': blocks_json,
         'theme_json': theme_json,
-        'schedules_json': schedules_json
+        'schedules_json': schedules_json,
+        'tags': tags,
+        'tags_json': tags_json,
+        'total_active_contacts': total_active_contacts,
     })
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def campaign_update_audience(request, campaign_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+        
+    org = request.organization
+    campaign = get_object_or_404(Campaign, id=campaign_id, organization=org)
+    
+    try:
+        data = json.loads(request.body) if request.body else {}
+        tag_id = data.get('target_tag')
+        
+        target_tag = Tag.objects.filter(id=tag_id, organization=org).first() if tag_id else None
+        campaign.target_tag = target_tag
+        campaign.save(update_fields=['target_tag'])
+        
+        tag_name = target_tag.name if target_tag else "Todos los contactos activos"
+        tag_count = Contact.objects.filter(organization=org, status='active', tags=target_tag).count() if target_tag else Contact.objects.filter(organization=org, status='active').count()
+        
+        ActivityLog.objects.create(
+            organization=org,
+            user=request.user,
+            action="Actualización de Audiencia",
+            details=f"Audiencia de la campaña '{campaign.name}' actualizada a '{tag_name}' ({tag_count} contactos)."
+        )
+        
+        return JsonResponse({
+            'status': 'success',
+            'target_tag_id': target_tag.id if target_tag else '',
+            'target_tag_name': tag_name,
+            'contact_count': tag_count,
+            'message': f"Audiencia actualizada a '{tag_name}' ({tag_count} contactos activos)."
+        })
+    except Exception as e:
+        logger.error(f"Error actualizando audiencia de campaña {campaign_id}: {e}")
+        return JsonResponse({'status': 'error', 'message': f"Error al actualizar audiencia: {str(e)}"}, status=500)
 
 @login_required
 def campaign_preview(request, campaign_id):
@@ -291,6 +357,12 @@ def campaign_send(request, campaign_id):
                 )
                 return JsonResponse({'status': 'success', 'message': f'Correo de prueba enviado a {test_email}'})
                 
+            # Actualizar audiencia si se especificó en el modal de envío
+            if 'target_tag' in data:
+                tag_id = data.get('target_tag')
+                campaign.target_tag = Tag.objects.filter(id=tag_id, organization=org).first() if tag_id else None
+                campaign.save(update_fields=['target_tag'])
+
             schedules_list = data.get('schedules', [])
             # Compatibilidad si envían scheduled_at individual
             single_scheduled = data.get('scheduled_at')

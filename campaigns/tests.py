@@ -83,3 +83,116 @@ class CampaignImageDeliveryTestCase(TestCase):
         # Limpieza
         if test_file.exists():
             test_file.unlink()
+
+from django.contrib.auth import get_user_model
+from contacts.models import Tag, Contact
+
+User = get_user_model()
+
+class CampaignAudienceManagementTestCase(TestCase):
+    def setUp(self):
+        self.org = Organization.objects.create(
+            name="Org Audiencias Test",
+            trade_name="Humm Audiencias",
+            email="audiencias@humm.cl"
+        )
+        self.user = User.objects.create_user(
+            email="admin_aud@humm.cl",
+            username="admin_aud",
+            password="testpassword123",
+            organization=self.org,
+            role="org_admin"
+        )
+        self.tag_pruebas = Tag.objects.create(
+            organization=self.org,
+            name="Contactos de Prueba"
+        )
+        self.tag_clientes = Tag.objects.create(
+            organization=self.org,
+            name="Clientes Reales"
+        )
+        
+        self.c1 = Contact.objects.create(
+            organization=self.org,
+            email="prueba1@example.com",
+            first_name="Prueba",
+            status="active"
+        )
+        self.c1.tags.add(self.tag_pruebas)
+
+        self.c2 = Contact.objects.create(
+            organization=self.org,
+            email="cliente1@example.com",
+            first_name="Cliente",
+            status="active"
+        )
+        self.c2.tags.add(self.tag_clientes)
+
+        self.campaign = Campaign.objects.create(
+            organization=self.org,
+            name="Campaña Test Audiencia",
+            subject="Prueba Inicial",
+            sender_name="Humm",
+            sender_email="hola@humm.cl",
+            target_tag=self.tag_pruebas,
+            created_by=self.user
+        )
+
+        self.client = Client()
+        self.client.login(username="admin_aud", password="testpassword123")
+        # Establecer la organización activa en la sesión
+        session = self.client.session
+        session['active_org_id'] = self.org.id
+        session.save()
+
+    def test_update_audience_to_different_tag(self):
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/audience/",
+            data={'target_tag': self.tag_clientes.id},
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertEqual(data['target_tag_name'], self.tag_clientes.name)
+        
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.target_tag, self.tag_clientes)
+
+    def test_update_audience_to_all_contacts(self):
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/audience/",
+            data={'target_tag': ''},
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertEqual(data['target_tag_name'], 'Todos los contactos activos')
+        
+        self.campaign.refresh_from_db()
+        self.assertIsNone(self.campaign.target_tag)
+
+    def test_campaign_send_updates_audience_inline(self):
+        # Despachar envío pasando target_tag en el cuerpo
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/send/",
+            data={'target_tag': self.tag_clientes.id},
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.campaign.refresh_from_db()
+        self.assertEqual(self.campaign.target_tag, self.tag_clientes)
+
+    def test_campaign_duplicate_with_custom_audience(self):
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/duplicate/",
+            data={'name': 'Copia Clientes Reales', 'target_tag': self.tag_clientes.id}
+        )
+        self.assertEqual(response.status_code, 302)
+        
+        duplicate = Campaign.objects.filter(name='Copia Clientes Reales').first()
+        self.assertIsNotNone(duplicate)
+        self.assertEqual(duplicate.target_tag, self.tag_clientes)
+        self.assertEqual(duplicate.subject, self.campaign.subject)
+

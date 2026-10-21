@@ -3,7 +3,7 @@
 {% block title %}Campañas de Correo | Hummailing{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div x-data="campaignListData()" class="space-y-6">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
@@ -37,17 +37,25 @@
                             <p class="text-xs text-slate-500 mt-0.5">{{ c.subject }}</p>
                         </td>
                         <td class="px-5 py-4">
-                            {% if c.target_tag %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-200">
-                                🏷️ {{ c.target_tag.name }}
-                            </span>
-                            {% elif c.segment %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                🎯 {{ c.segment.name }}
-                            </span>
-                            {% else %}
-                            <span class="text-slate-400">Todos los contactos activos</span>
-                            {% endif %}
+                            <div class="flex items-center space-x-2">
+                                {% if c.target_tag %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-200">
+                                    🏷️ {{ c.target_tag.name }}
+                                </span>
+                                {% elif c.segment %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    🎯 {{ c.segment.name }}
+                                </span>
+                                {% else %}
+                                <span class="text-slate-500 font-medium text-[11px]">Todos los contactos</span>
+                                {% endif %}
+
+                                <button type="button" @click="openAudienceModal({{ c.id }}, '{{ c.name|escapejs }}', '{{ c.target_tag_id|default:'' }}')"
+                                    class="text-[11px] text-brand-blue hover:text-brand-navy hover:underline font-bold px-1.5 py-0.5 rounded hover:bg-blue-50 transition-colors"
+                                    title="Modificar audiencia objetivo">
+                                    ✏️ Cambiar
+                                </button>
+                            </div>
                         </td>
                         <td class="px-5 py-4 text-center">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if c.status == 'sent' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif c.status == 'scheduled' %}bg-amber-50 text-amber-800 border border-amber-200{% elif c.status == 'sending' %}bg-blue-50 text-brand-blue border border-blue-200 animate-pulse{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
@@ -67,9 +75,11 @@
                             {{ c.created_at|date:"d M Y" }}
                         </td>
                         <td class="px-5 py-4 text-right space-x-2">
-                            <a href="{% url 'campaigns:duplicate' c.id %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors inline-block" title="Crear una copia de esta campaña">
+                            <button type="button" @click="openDuplicateModal({{ c.id }}, '{{ c.name|escapejs }}', '{{ c.target_tag_id|default:'' }}')"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold text-xs transition-colors inline-block"
+                                title="Crear una copia de esta campaña con opción de elegir audiencia">
                                 📑 Duplicar
-                            </a>
+                            </button>
                             <a href="{% url 'campaigns:editor' c.id %}" class="bg-brand-blue hover:bg-brand-navy text-white px-3 py-1.5 rounded-lg font-bold text-xs transition-colors shadow-sm inline-block">
                                 ✏️ Diseñar
                             </a>
@@ -96,10 +106,157 @@
         <div class="bg-slate-50 border-t border-slate-200 px-5 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-slate-500">
             <div class="flex items-center space-x-2">
                 <span class="text-brand-blue font-bold">💡 Nota:</span>
-                <span>Para enviar nuevamente una campaña existente o ajustar su diseño, ingresa a <strong>✏️ Diseñar</strong>.</span>
+                <span>Puedes cambiar la audiencia objetivo de cualquier campaña haciendo clic en <strong>✏️ Cambiar</strong> o dentro del diseñador.</span>
             </div>
-            <span class="text-[11px] text-slate-400">Puedes usar <strong>📑 Duplicar</strong> para crear una nueva versión manteniendo el diseño base.</span>
+            <span class="text-[11px] text-slate-400">Al duplicar una campaña puedes definir una nueva audiencia manteniendo el diseño base.</span>
+        </div>
+    </div>
+
+    <!-- Modal Cambiar Audiencia Rápido -->
+    <div x-show="showAudienceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        style="display: none;">
+        <div @click.away="if(!savingAudience) showAudienceModal = false"
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="text-xl">🎯</span>
+                <h3 class="text-lg font-bold text-brand-navy">Modificar Audiencia Objetivo</h3>
+            </div>
+            <p class="text-slate-500 text-xs mb-4">
+                Campaña: <strong class="text-slate-800" x-text="audienceCampaignName"></strong>
+            </p>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Audiencia Destinataria</label>
+                    <select x-model="selectedTagId" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <option value="">👥 Todos los contactos activos ({{ total_active_contacts }})</option>
+                        {% for t in tags %}
+                        <option value="{{ t.id }}">🏷️ Etiqueta: {{ t.name }} ({{ t.count }} contactos)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3 flex items-start space-x-2.5">
+                    <span class="text-base">ℹ️</span>
+                    <div>
+                        <p class="text-xs font-bold text-brand-navy">Exclusiones automáticas</p>
+                        <p class="text-[11px] text-slate-600 font-medium mt-0.5">Contactos desuscritos o marcados como rebotados son excluidos de forma automática de los despachos.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" @click="showAudienceModal = false" :disabled="savingAudience"
+                    class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                <button type="button" @click="saveAudience" :disabled="savingAudience"
+                    class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                    <span x-show="!savingAudience">💾 Guardar Audiencia</span>
+                    <span x-show="savingAudience">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Duplicar con Selección de Audiencia -->
+    <div x-show="showDuplicateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        style="display: none;">
+        <div @click.away="showDuplicateModal = false"
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="text-xl">📑</span>
+                <h3 class="text-lg font-bold text-brand-navy">Duplicar Campaña</h3>
+            </div>
+            <p class="text-slate-500 text-xs mb-4">Crea una copia idéntica del contenido y diseño, con la opción de asignar una audiencia diferente.</p>
+
+            <form :action="duplicateActionUrl" method="POST" class="space-y-4 mb-6">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nombre de la Nueva Campaña *</label>
+                    <input type="text" name="name" x-model="duplicateName" required
+                        class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Audiencia Objetivo para la Copia</label>
+                    <select name="target_tag" x-model="duplicateTagId" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <option value="">👥 Todos los contactos activos ({{ total_active_contacts }})</option>
+                        {% for t in tags %}
+                        <option value="{{ t.id }}">🏷️ Etiqueta: {{ t.name }} ({{ t.count }} contactos)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" @click="showDuplicateModal = false"
+                        class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                    <button type="submit"
+                        class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                        <span>📑 Crear Copia y Diseñar</span>
+                        <span>→</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    function campaignListData() {
+        return {
+            showAudienceModal: false,
+            audienceCampaignId: null,
+            audienceCampaignName: '',
+            selectedTagId: '',
+            savingAudience: false,
+
+            showDuplicateModal: false,
+            duplicateCampaignId: null,
+            duplicateName: '',
+            duplicateTagId: '',
+            duplicateActionUrl: '',
+
+            openAudienceModal(id, name, tagId) {
+                this.audienceCampaignId = id;
+                this.audienceCampaignName = name;
+                this.selectedTagId = tagId || '';
+                this.showAudienceModal = true;
+            },
+
+            async saveAudience() {
+                if (!this.audienceCampaignId) return;
+                this.savingAudience = true;
+                try {
+                    const response = await fetch(`/campaigns/${this.audienceCampaignId}/audience/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ target_tag: this.selectedTagId || null })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Error al actualizar la audiencia.');
+                    }
+                } catch (e) {
+                    alert('Error de conexión: ' + e.message);
+                } finally {
+                    this.savingAudience = false;
+                }
+            },
+
+            openDuplicateModal(id, name, tagId) {
+                this.duplicateCampaignId = id;
+                this.duplicateName = 'Copia de ' + name;
+                this.duplicateTagId = tagId || '';
+                this.duplicateActionUrl = `/campaigns/${id}/duplicate/`;
+                this.showDuplicateModal = true;
+            }
+        };
+    }
+</script>
 {% endblock %}

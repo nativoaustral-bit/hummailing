@@ -34,8 +34,18 @@
                 ← Volver a Campañas
             </a>
             <div>
-                <h1 class="text-base font-black text-brand-navy leading-tight">{{ campaign.name }}</h1>
-                <p class="text-xs text-slate-400">Asunto: <strong class="text-slate-700">{{ campaign.subject }}</strong></p>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-base font-black text-brand-navy leading-tight">{{ campaign.name }}</h1>
+                    <button type="button" @click="showAudienceModal = true"
+                        class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-colors hover:shadow-sm"
+                        :class="targetTagId ? 'bg-blue-50 text-brand-blue border-blue-200 hover:bg-blue-100' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'"
+                        title="Haz clic para modificar la audiencia objetivo de esta campaña">
+                        <span>🎯</span>
+                        <span x-text="getAudienceLabel()"></span>
+                        <span class="text-[9px] opacity-70 underline ml-0.5">Cambiar</span>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">Asunto: <strong class="text-slate-700">{{ campaign.subject }}</strong></p>
             </div>
         </div>
         
@@ -444,6 +454,23 @@
             <h3 class="text-xl font-bold text-brand-navy mb-1">Enviar Campaña</h3>
             <p class="text-slate-500 text-xs mb-5">Elige si deseas despachar de inmediato o programar una o varias fechas y horas de envío.</p>
 
+            <!-- Configuración y Confirmación de Audiencia -->
+            <div class="mb-5 bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">🎯 Audiencia Objetivo</label>
+                    <span class="text-[11px] font-bold text-brand-blue" x-text="getAudienceCountText()"></span>
+                </div>
+                <select x-model="targetTagId" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    <option value="">👥 Todos los contactos activos (<span x-text="totalActiveContacts"></span>)</option>
+                    <template x-for="t in tags" :key="t.id">
+                        <option :value="t.id" x-text="'🏷️ Etiqueta: ' + t.name + ' (' + t.count + ' contactos)'"></option>
+                    </template>
+                </select>
+                <p class="text-[10px] text-slate-400">
+                    💡 Puedes modificar la audiencia en este momento. Los contactos dados de baja o rebotados son excluidos de forma automática.
+                </p>
+            </div>
+
             <!-- Selector de Modo de Envío -->
             <div class="grid grid-cols-2 gap-3 mb-5">
                 <button type="button" @click="setSendMode('now')"
@@ -514,6 +541,49 @@
         </div>
     </div>
 
+    <!-- Modal Modificar Audiencia Objetivo -->
+    <div x-show="showAudienceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        style="display: none;">
+        <div @click.away="if(!audienceSaving) showAudienceModal = false"
+            class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md border border-slate-200">
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="text-xl">🎯</span>
+                <h3 class="text-lg font-bold text-brand-navy">Modificar Audiencia Objetivo</h3>
+            </div>
+            <p class="text-slate-500 text-xs mb-4">Elige a qué grupo de contactos se enviará esta campaña. Puedes probarla primero con tu etiqueta de prueba y luego asignarla a tus contactos finales sin necesidad de duplicar ni crear una campaña nueva.</p>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Audiencia Seleccionada</label>
+                    <select x-model="targetTagId" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-xs text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <option value="">👥 Todos los contactos activos (<span x-text="totalActiveContacts"></span>)</option>
+                        <template x-for="t in tags" :key="t.id">
+                            <option :value="t.id" x-text="'🏷️ Etiqueta: ' + t.name + ' (' + t.count + ' contactos)'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3 flex items-start space-x-2.5">
+                    <span class="text-base">📊</span>
+                    <div>
+                        <p class="text-xs font-bold text-brand-navy">Destinatarios efectivos calculados</p>
+                        <p class="text-[11px] text-slate-600 font-medium mt-0.5" x-text="'Esta campaña llegará a: ' + getAudienceCountText()"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" @click="showAudienceModal = false" :disabled="audienceSaving"
+                    class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancelar</button>
+                <button type="button" @click="saveAudience" :disabled="audienceSaving"
+                    class="px-5 py-2 text-xs font-bold text-white bg-brand-blue hover:bg-brand-navy rounded-xl shadow-md transition-colors flex items-center space-x-1.5">
+                    <span x-show="!audienceSaving">💾 Guardar Audiencia</span>
+                    <span x-show="audienceSaving">Guardando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Envío de Prueba Individual -->
     <div x-show="showTestModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
         style="display: none;">
@@ -551,11 +621,57 @@
             activeIndex: null,
             showSendModal: false,
             showTestModal: false,
+            showAudienceModal: false,
+            audienceSaving: false,
+            targetTagId: '{{ campaign.target_tag_id|default:"" }}',
+            targetTagName: '{{ campaign.target_tag.name|default:"" }}',
+            tags: {{ tags_json|default:"[]" }},
+            totalActiveContacts: {{ total_active_contacts|default:0 }},
             testEmail: '{{ user.email }}',
             testSending: false,
             sendMode: '{{ schedules_json }}' !== '[]' ? 'scheduled' : 'now',
             schedules: {{ schedules_json|default:"[]" }},
             sendingState: 'idle',
+
+            getAudienceLabel() {
+                if (!this.targetTagId) return 'Todos los contactos (' + this.totalActiveContacts + ')';
+                const tag = this.tags.find(t => String(t.id) === String(this.targetTagId));
+                return tag ? '🏷️ ' + tag.name + ' (' + tag.count + ')' : (this.targetTagName ? '🏷️ ' + this.targetTagName : 'Todos los contactos');
+            },
+
+            getAudienceCountText() {
+                if (!this.targetTagId) return this.totalActiveContacts + ' contactos activos';
+                const tag = this.tags.find(t => String(t.id) === String(this.targetTagId));
+                return tag ? tag.count + ' contactos activos' : this.totalActiveContacts + ' contactos activos';
+            },
+
+            async saveAudience() {
+                this.audienceSaving = true;
+                try {
+                    const response = await fetch('{% url "campaigns:update_audience" campaign.id %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': this.getCsrfToken()
+                        },
+                        body: JSON.stringify({ target_tag: this.targetTagId || null })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.status === 'success') {
+                        this.targetTagName = data.target_tag_name;
+                        this.showAudienceModal = false;
+                        alert(data.message);
+                    } else {
+                        alert(data.message || 'Error al actualizar audiencia.');
+                    }
+                } catch (e) {
+                    alert('Error de conexión al actualizar audiencia: ' + e.message);
+                } finally {
+                    this.audienceSaving = false;
+                }
+            },
 
             setSendMode(mode) {
                 this.sendMode = mode;
@@ -909,6 +1025,7 @@
                         }
 
                         const payload = {};
+                        payload.target_tag = this.targetTagId || null;
                         if (this.sendMode === 'scheduled') {
                             payload.schedules = this.schedules
                                 .filter(s => s.date && s.date.trim())

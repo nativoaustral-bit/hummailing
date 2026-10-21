@@ -10,6 +10,7 @@ urlpatterns = [
     path('<int:campaign_id>/editor/', views.campaign_editor, name='editor'),
     path('<int:campaign_id>/preview/', views.campaign_preview, name='preview'),
     path('<int:campaign_id>/send/', views.campaign_send, name='send'),
+    path('<int:campaign_id>/audience/', views.campaign_update_audience, name='update_audience'),
     path('<int:campaign_id>/duplicate/', views.campaign_duplicate, name='duplicate'),
     path('<int:campaign_id>/delete/', views.campaign_delete, name='delete'),
     path('upload-image/', views.upload_image, name='upload_image'),
