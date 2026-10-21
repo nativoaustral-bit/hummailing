@@ -54,6 +54,10 @@ jobs:
             chmod 775 /home1/paulocis/private/hummailing_data/logs/ 2>/dev/null || true
             python manage.py migrate
             python manage.py collectstatic --noinput
+            mkdir -p media/logos
+            chmod 755 media media/logos 2>/dev/null || true
+            find media -type d -exec chmod 755 {} + 2>/dev/null || true
+            find media -type f -exec chmod 644 {} + 2>/dev/null || true
             chmod 755 passenger_wsgi.py manage.py
             mkdir -p tmp
             touch tmp/restart.txt

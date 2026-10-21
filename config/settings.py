@@ -197,6 +197,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Media files (Uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+SITE_URL = env('SITE_URL', default='https://mailing.humm.cl')
 
 # Tamaños máximos para payloads JSON grandes (bloques con imágenes inline)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400  # 25 MB

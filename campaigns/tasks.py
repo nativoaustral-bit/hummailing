@@ -23,15 +23,17 @@ from .models import Campaign, CampaignLink, TrackingEvent
 from contacts.models import Contact
 from organizations.models import SuppressionEntry
 
+from .utils import make_absolute_image_url
+
 logger = logging.getLogger(__name__)
 
 def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=None):
     """
     Convierte los bloques JSON y el tema visual en HTML profesional con colores globales.
     Reemplaza enlaces con URLs de seguimiento para detectar clics y conversiones.
+    Garantiza que todas las imágenes sean URLs absolutas públicas para renderizar en clientes de correo.
     """
-    if not base_site_url:
-        base_site_url = getattr(settings, 'SITE_URL', 'https://mailing.humm.cl')
+    base_site_url = (base_site_url or getattr(settings, 'SITE_URL', 'https://mailing.humm.cl')).rstrip('/')
 
     if isinstance(blocks_data, dict):
         theme = blocks_data.get('theme', {})
@@ -57,7 +59,8 @@ def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=Non
         content = block.get('content', {})
         
         if b_type == 'header':
-            logo_url = content.get('logo_url', '').strip()
+            raw_logo = content.get('logo_url', '').strip()
+            logo_url = make_absolute_image_url(raw_logo, base_site_url)
             company_name = content.get('company_name', '').strip() or (campaign.organization.trade_name if campaign.organization else "Hummailing")
             subtitle = content.get('subtitle', '').strip()
             
@@ -81,7 +84,8 @@ def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=Non
             html += f'<div style="padding: 8px 32px;"><div style="color: #334155; font-size: 15px; line-height: 1.6;">{text}</div></div>'
             
         elif b_type == 'image':
-            url = content.get('url', '')
+            raw_url = content.get('url', '')
+            url = make_absolute_image_url(raw_url, base_site_url)
             if url:
                 html += f'<div style="padding: 16px 32px; text-align: center;"><img src="{url}" style="max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"></div>'
                 
@@ -112,9 +116,7 @@ def render_blocks_to_html(blocks_data, campaign, contact=None, base_site_url=Non
             html += f'<p style="margin-top: 10px;"><a href="{unsub_url}" style="color: {button_bg}; text-decoration: underline;">Cancelar suscripción / Darse de baja</a></p>'
             html += '</div>'
 
-
     html += '</div>'
-    return html
     return html
 
 @shared_task

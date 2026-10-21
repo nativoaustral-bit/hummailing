@@ -119,39 +119,8 @@ def campaign_delete(request, campaign_id):
         messages.success(request, f"Campaña '{name}' eliminada.")
     return redirect('campaigns:list')
 
-import base64
-import re
-import os
+from .utils import extract_and_save_base64_image, make_absolute_image_url
 
-def extract_and_save_base64_image(data_uri):
-    """
-    Si la URL es un data:image/...;base64,..., decodifica y guarda el archivo en MEDIA_ROOT/logos/
-    retornando la URL limpia. Si no, retorna la URL original.
-    """
-    if not isinstance(data_uri, str) or not data_uri.startswith('data:image/'):
-        return data_uri
-
-    match = re.match(r'^data:image/([a-zA-Z0-9\+\-]+);base64,(.+)$', data_uri)
-    if not match:
-        return data_uri
-
-    raw_ext = match.group(1).lower()
-    b64_data = match.group(2)
-    ext_map = {'jpeg': '.jpg', 'jpg': '.jpg', 'png': '.png', 'webp': '.webp', 'gif': '.gif'}
-    ext = ext_map.get(raw_ext, '.png')
-
-    try:
-        file_bytes = base64.b64decode(b64_data)
-        logos_dir = settings.MEDIA_ROOT / 'logos'
-        os.makedirs(logos_dir, exist_ok=True)
-        filename = f"img_{uuid.uuid4().hex[:12]}{ext}"
-        file_path = logos_dir / filename
-        with open(file_path, 'wb') as f:
-            f.write(file_bytes)
-        return f"{settings.MEDIA_URL}logos/{filename}"
-    except Exception as e:
-        logger.warning(f"No se pudo extraer imagen base64: {e}")
-        return data_uri
 
 @role_required(['org_admin', 'campaign_editor'])
 def campaign_editor(request, campaign_id):
@@ -218,7 +187,7 @@ def campaign_editor(request, campaign_id):
                         except Exception as link_err:
                             logger.warning(f"Error sincronizando enlace CTA '{url}': {link_err}")
                             
-            return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'success', 'blocks': blocks})
         except Exception as e:
             import traceback
             tb = traceback.format_exc()
@@ -448,7 +417,12 @@ def upload_image(request):
     # 4. Guardar y procesar dimensiones máximas
     try:
         logos_dir = settings.MEDIA_ROOT / 'logos'
-        os.makedirs(logos_dir, exist_ok=True)
+        os.makedirs(logos_dir, mode=0o755, exist_ok=True)
+        try:
+            os.chmod(settings.MEDIA_ROOT, 0o755)
+            os.chmod(logos_dir, 0o755)
+        except Exception:
+            pass
         
         clean_filename = f"logo_{uuid.uuid4().hex[:12]}{ext}"
         file_path = logos_dir / clean_filename
@@ -466,10 +440,14 @@ def upload_image(request):
                 img.save(file_path, 'WEBP', quality=85)
             else:
                 img.save(file_path)
+
+        try:
+            os.chmod(file_path, 0o644)
+        except Exception:
+            pass
                     
-        host = request.get_host()
-        proto = 'https' if not host.startswith('127.0.0.1') and not host.startswith('localhost') else request.scheme
-        media_url = f"{proto}://{host}{settings.MEDIA_URL}logos/{clean_filename}"
+        base_url = (getattr(settings, 'SITE_URL', 'https://mailing.humm.cl') or 'https://mailing.humm.cl').rstrip('/')
+        media_url = f"{base_url}{settings.MEDIA_URL}logos/{clean_filename}"
         
         return JsonResponse({
             'status': 'success',

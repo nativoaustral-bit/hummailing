@@ -797,6 +797,9 @@
                     }
 
                     if (data && data.status === 'success') {
+                        if (data.blocks) {
+                            this.blocks = data.blocks;
+                        }
                         if (button) {
                             button.innerHTML = '<span>✅</span><span>¡Guardado!</span>';
                             setTimeout(() => {
@@ -821,8 +824,15 @@
                 }
             },
 
-            sendTestEmail() {
+            async sendTestEmail() {
                 this.testSending = true;
+                // Sincronizar y guardar automáticamente los cambios más recientes antes del envío de prueba
+                try {
+                    await this.saveCampaign();
+                } catch (saveErr) {
+                    console.warn('Aviso al guardar antes de enviar prueba:', saveErr);
+                }
+
                 fetch('{% url "campaigns:send" campaign.id %}', {
                     method: 'POST',
                     headers: {
