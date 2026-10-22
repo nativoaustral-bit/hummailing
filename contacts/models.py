@@ -59,6 +59,7 @@ class Contact(models.Model):
     internal_notes = models.TextField(blank=True, verbose_name="Observaciones internas")
     
     tags = models.ManyToManyField(Tag, blank=True, verbose_name="Etiquetas")
+    resend_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, verbose_name="Resend Contact ID")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

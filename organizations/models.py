@@ -20,6 +20,7 @@ class Organization(models.Model):
     default_sender_name = models.CharField(max_length=150, default="Hummailing", verbose_name="Nombre del Remitente")
     default_sender_email = models.EmailField(default="hola@humm.cl", verbose_name="Correo de Envío Autorizado")
     default_reply_to = models.EmailField(default="hola@humm.cl", blank=True, verbose_name="Correo de Respuesta (Reply-To)")
+    resend_topic_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="Resend Topic ID")
     
     # Dirección
     address = models.CharField(max_length=255, blank=True, verbose_name="Dirección Comercial")

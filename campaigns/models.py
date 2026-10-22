@@ -48,6 +48,11 @@ class Campaign(models.Model):
     scheduled_at = models.DateTimeField(null=True, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True, help_text="Cuándo comenzó el envío")
     
+    broadcast_id = models.CharField(max_length=100, blank=True, null=True, db_index=True, verbose_name="Resend Broadcast ID")
+    resend_segment_id = models.CharField(max_length=100, blank=True, null=True, verbose_name="Resend Segment ID")
+    broadcast_status = models.CharField(max_length=50, blank=True, null=True, verbose_name="Estado en Resend")
+    error_message = models.TextField(blank=True, verbose_name="Mensaje de error")
+    
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

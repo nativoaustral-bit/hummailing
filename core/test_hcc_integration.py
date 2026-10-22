@@ -81,7 +81,14 @@ class HummailingHCCIntegrationTests(TestCase):
 
     def test_activation_triggered_on_first_real_campaign_sent(self):
         """Prueba 1: TOOL_ACTIVATED se genera tras el primer envío real exitoso."""
-        with patch('resend.Emails.send', return_value={'id': 'msg_test_123'}),              patch('core.services.hcc_service.send_event_to_hcc', return_value={'success': True, 'status_code': 201, 'duplicate': False, 'error': '', 'is_permanent': False, 'data': {}}):
+        with patch('resend.Emails.send', return_value={'id': 'msg_test_123'}), \
+             patch('resend.Broadcasts.create', return_value={'id': 'bcast_test_123'}), \
+             patch('resend.Broadcasts.send', return_value={'id': 'bcast_test_123'}), \
+             patch('resend.Segments.create', return_value={'id': 'seg_test_123'}), \
+             patch('resend.Segments.get', return_value={'id': 'seg_test_123'}), \
+             patch('resend.Contacts.get', return_value={'id': 'cnt_test_123', 'unsubscribed': False}), \
+             patch('resend.ContactSegments.add', return_value={'id': 'cs_test_123'}), \
+             patch('core.services.hcc_service.send_event_to_hcc', return_value={'success': True, 'status_code': 201, 'duplicate': False, 'error': '', 'is_permanent': False, 'data': {}}):
             
             from campaigns.tasks import send_campaign_task
             with self.captureOnCommitCallbacks(execute=True):
@@ -117,7 +124,8 @@ class HummailingHCCIntegrationTests(TestCase):
 
     def test_no_activation_on_zero_successful_sends(self):
         """Prueba 3: Campaña con cero envíos exitosos NO activa la herramienta."""
-        with patch('resend.Emails.send', side_effect=Exception("SMTP Connection Refused")):
+        with patch('resend.Broadcasts.create', side_effect=Exception("Broadcast failed")), \
+             patch('resend.Emails.send', side_effect=Exception("SMTP Connection Refused")):
             from campaigns.tasks import send_campaign_task
             with self.captureOnCommitCallbacks(execute=True):
                 send_campaign_task(self.campaign.id, sender_user_id=self.titular.id)
@@ -245,7 +253,14 @@ class HummailingHCCIntegrationTests(TestCase):
 
     def test_resilience_hcc_down_campaign_unaffected(self):
         """Prueba 7: Falla en red hacia HCC deja outbox en PENDING sin afectar la campaña."""
-        with patch('resend.Emails.send', return_value={'id': 'msg_ok'}),              patch('core.services.hcc_service.send_event_to_hcc', return_value={
+        with patch('resend.Emails.send', return_value={'id': 'msg_ok'}), \
+             patch('resend.Broadcasts.create', return_value={'id': 'bcast_resilience_123'}), \
+             patch('resend.Broadcasts.send', return_value={'id': 'bcast_resilience_123'}), \
+             patch('resend.Segments.create', return_value={'id': 'seg_resilience_123'}), \
+             patch('resend.Segments.get', return_value={'id': 'seg_resilience_123'}), \
+             patch('resend.Contacts.get', return_value={'id': 'cnt_resilience_123', 'unsubscribed': False}), \
+             patch('resend.ContactSegments.add', return_value={'id': 'cs_resilience_123'}), \
+             patch('core.services.hcc_service.send_event_to_hcc', return_value={
                  'success': False,
                  'status_code': 0,
                  'duplicate': False,

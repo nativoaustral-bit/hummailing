@@ -1,7 +1,9 @@
 import uuid
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -14,6 +16,8 @@ from core.models import User
 
 from core.permissions import role_required, block_viewer_mutations
 from core.security import validate_unsubscribe_token
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def opportunity_list(request):
@@ -96,21 +100,25 @@ def redirect_tracked_link(request, token):
     """
     link = get_object_or_404(CampaignLink, token=token)
     contact_id = request.GET.get('c')
+    contact_email = request.GET.get('e')
     
     contact = None
     if contact_id:
         contact = Contact.objects.filter(id=contact_id, organization=link.campaign.organization).first()
+    elif contact_email:
+        contact = Contact.objects.filter(email__iexact=contact_email.strip(), organization=link.campaign.organization).first()
         
-    # Registrar evento de clic
+    # Registrar evento de clic (evitando duplicados)
     if contact:
-        TrackingEvent.objects.create(
-            campaign=link.campaign,
-            contact=contact,
-            event_type='click',
-            link=link,
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT', '')
-        )
+        if not TrackingEvent.objects.filter(campaign=link.campaign, contact=contact, event_type='click', link=link).exists():
+            TrackingEvent.objects.create(
+                campaign=link.campaign,
+                contact=contact,
+                event_type='click',
+                link=link,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
         
         # Si el enlace es de tipo 'conversión', creamos o actualizamos la Oportunidad Comercial
         if link.link_type == 'conversion':
@@ -155,6 +163,18 @@ def unsubscribe_contact(request, token):
             email=contact.email,
             defaults={'reason': 'unsub'}
         )
+
+        # Sincronizar baja con Resend si está disponible
+        if getattr(settings, 'RESEND_API_KEY', None):
+            try:
+                import resend
+                resend.api_key = settings.RESEND_API_KEY
+                resend.Contacts.update({
+                    'email': contact.email,
+                    'unsubscribed': True
+                })
+            except Exception as res_unsub_err:
+                logger.warning(f"Aviso: no se pudo sincronizar baja en Resend: {res_unsub_err}")
         
         # Registrar evento de seguimiento si se especifica la campaña
         campaign_id = request.POST.get('camp') or request.GET.get('camp')
