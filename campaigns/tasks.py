@@ -214,6 +214,7 @@ def get_or_create_resend_topic(org):
 def get_or_create_resend_segment(campaign):
     """
     Crea o reutiliza un segmento exclusivo por organización y campaña en Resend.
+    Gestiona automáticamente la cuota de segmentos de Resend (máximo 3 en plan gratuito).
     """
     if campaign.resend_segment_id:
         try:
@@ -222,14 +223,57 @@ def get_or_create_resend_segment(campaign):
         except Exception:
             pass # Recrear si fue borrado en Resend
 
-    seg_name = f"Camp {campaign.id} - {campaign.name[:30]} ({timezone.now().strftime('%y%m%d%H%M')})"[:50]
-    new_seg = resend.Segments.create({'name': seg_name})
-    seg_id = new_seg.get('id') if isinstance(new_seg, dict) else getattr(new_seg, 'id', None)
-    if not seg_id:
-        raise ValueError(f"Resend no retornó un id de segmento válido: {new_seg}")
-    campaign.resend_segment_id = seg_id
-    campaign.save(update_fields=['resend_segment_id'])
-    return seg_id
+    seg_name = f"Camp {campaign.id} - {campaign.name[:25]} ({timezone.now().strftime('%y%m%d%H%M')})"[:50]
+
+    # Si tenemos 3 o más segmentos en la cuenta, liberar espacio eliminando segmentos antiguos
+    try:
+        seg_list = resend.Segments.list()
+        data = seg_list.get('data', []) if isinstance(seg_list, dict) else getattr(seg_list, 'data', [])
+        if len(data) >= 3:
+            logger.info(f"Cuota de segmentos al límite ({len(data)}/3). Liberando segmento antiguo para campaña {campaign.id}...")
+            for s in data:
+                s_name = s.get('name', '') if isinstance(s, dict) else getattr(s, 'name', '')
+                s_id = s.get('id') if isinstance(s, dict) else getattr(s, 'id', '')
+                if s_name != 'General' and (s_name.startswith('Camp ') or 'Test' in s_name):
+                    try:
+                        resend.Segments.remove(id=s_id)
+                        logger.info(f"Segmento '{s_name}' ({s_id}) liberado con éxito.")
+                        break
+                    except Exception as rm_err:
+                        logger.warning(f"No se pudo liberar segmento {s_id}: {rm_err}")
+    except Exception as list_err:
+        logger.warning(f"Error listando segmentos en Resend: {list_err}")
+
+    # 2. Intentar crear el nuevo segmento
+    try:
+        new_seg = resend.Segments.create({'name': seg_name})
+        seg_id = new_seg.get('id') if isinstance(new_seg, dict) else getattr(new_seg, 'id', None)
+        if not seg_id:
+            raise ValueError(f"Resend no retornó un id de segmento válido: {new_seg}")
+        campaign.resend_segment_id = seg_id
+        campaign.save(update_fields=['resend_segment_id'])
+        return seg_id
+    except Exception as create_err:
+        # Si aún falla por límite de segmentos, intentar liberar cualquier segmento Camp y reintentar
+        err_str = str(create_err)
+        if "3 segments" in err_str or "Upgrade to add more" in err_str:
+            try:
+                seg_list = resend.Segments.list()
+                data = seg_list.get('data', []) if isinstance(seg_list, dict) else getattr(seg_list, 'data', [])
+                for s in data:
+                    s_name = s.get('name', '') if isinstance(s, dict) else getattr(s, 'name', '')
+                    s_id = s.get('id') if isinstance(s, dict) else getattr(s, 'id', '')
+                    if s_name != 'General':
+                        resend.Segments.remove(id=s_id)
+                        new_seg = resend.Segments.create({'name': seg_name})
+                        seg_id = new_seg.get('id') if isinstance(new_seg, dict) else getattr(new_seg, 'id', None)
+                        if seg_id:
+                            campaign.resend_segment_id = seg_id
+                            campaign.save(update_fields=['resend_segment_id'])
+                            return seg_id
+            except Exception:
+                pass
+        raise
 
 
 def sync_contacts_to_resend_segment(contacts, segment_id, org):

@@ -68,6 +68,19 @@
         </div>
     </div>
 
+    {% if campaign.error_message and campaign.status == 'draft' %}
+    <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl text-xs flex items-center justify-between shadow-xs">
+        <div class="flex items-center space-x-2.5">
+            <span class="text-base">⚠️</span>
+            <div>
+                <strong class="font-bold">Aviso del último intento de envío:</strong>
+                <span class="text-red-700 ml-1">{{ campaign.error_message }}</span>
+            </div>
+        </div>
+        <span class="text-[11px] font-bold text-red-600 uppercase bg-red-100 px-2.5 py-1 rounded-lg">Borrador</span>
+    </div>
+    {% endif %}
+
     <!-- Contenedor Principal: Sidebar Izquierda + Canvas Amplio Derecho -->
     <div class="flex flex-col lg:flex-row gap-5 items-start">
         

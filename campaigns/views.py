@@ -417,14 +417,22 @@ def campaign_send(request, campaign_id):
             else:
                 # Envío Inmediato
                 campaign.status = 'sending'
-                campaign.sent_at = timezone.now()
-                campaign.save(update_fields=['status', 'sent_at'])
+                campaign.error_message = ''
+                campaign.save(update_fields=['status', 'error_message'])
                 dispatch_campaign_task(campaign.id, sender_user_id=request.user.id)
+                
+                campaign.refresh_from_db()
+                if campaign.status == 'draft' and campaign.error_message:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"No se pudo despachar el Broadcast: {campaign.error_message}"
+                    }, status=400)
+                    
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
                     action="Despacho de Campaña",
-                    details=f"Campaña '{campaign.name}' enviada a la cola de despacho inmediato."
+                    details=f"Campaña '{campaign.name}' despachada vía Resend Broadcasts."
                 )
                 return JsonResponse({
                     'status': 'success',

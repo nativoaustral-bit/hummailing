@@ -114,7 +114,7 @@ class CampaignAudienceManagementTestCase(TestCase):
         
         self.c1 = Contact.objects.create(
             organization=self.org,
-            email="prueba1@example.com",
+            email="prueba1@alphalabs.cl",
             first_name="Prueba",
             status="active"
         )
@@ -122,7 +122,7 @@ class CampaignAudienceManagementTestCase(TestCase):
 
         self.c2 = Contact.objects.create(
             organization=self.org,
-            email="cliente1@example.com",
+            email="cliente1@alphalabs.cl",
             first_name="Cliente",
             status="active"
         )
@@ -173,7 +173,10 @@ class CampaignAudienceManagementTestCase(TestCase):
         self.campaign.refresh_from_db()
         self.assertIsNone(self.campaign.target_tag)
 
-    def test_campaign_send_updates_audience_inline(self):
+    from unittest.mock import patch
+
+    @patch('campaigns.views.dispatch_campaign_task')
+    def test_campaign_send_updates_audience_inline(self, mock_dispatch):
         # Despachar envío pasando target_tag en el cuerpo
         response = self.client.post(
             f"/campaigns/{self.campaign.id}/send/",
@@ -183,6 +186,7 @@ class CampaignAudienceManagementTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.campaign.refresh_from_db()
         self.assertEqual(self.campaign.target_tag, self.tag_clientes)
+        self.assertTrue(mock_dispatch.called)
 
     def test_campaign_duplicate_with_custom_audience(self):
         response = self.client.post(

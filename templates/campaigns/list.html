@@ -61,6 +61,11 @@
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {% if c.status == 'sent' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif c.status == 'scheduled' %}bg-amber-50 text-amber-800 border border-amber-200{% elif c.status == 'sending' %}bg-blue-50 text-brand-blue border border-blue-200 animate-pulse{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
                                 {% if c.status == 'scheduled' %}⏰ {% endif %}{{ c.get_status_display }}
                             </span>
+                            {% if c.error_message and c.status == 'draft' %}
+                            <div class="mt-1.5 text-[10px] text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-0.5 text-center max-w-[200px] mx-auto font-medium" title="{{ c.error_message }}">
+                                ⚠️ {{ c.error_message }}
+                            </div>
+                            {% endif %}
                             {% if c.schedules.all %}
                             <div class="mt-1.5 flex flex-wrap gap-1 justify-center max-w-[200px] mx-auto">
                                 {% for sch in c.schedules.all %}
