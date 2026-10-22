@@ -3,7 +3,24 @@
 {% block title %}Prospectos de Landings | Panel Master Humm{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" x-data="{
+    selected: [],
+    allSelected: false,
+    toggleAll() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        if (this.allSelected) {
+            this.selected = [];
+            this.allSelected = false;
+        } else {
+            this.selected = Array.from(checkboxes).map(cb => cb.value);
+            this.allSelected = true;
+        }
+    },
+    updateSelectAll() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        this.allSelected = checkboxes.length > 0 && this.selected.length === checkboxes.length;
+    }
+}">
     <!-- Encabezado de la Sección -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
@@ -100,12 +117,35 @@
         </form>
     </div>
 
+    <!-- Barra de Acción Masiva (Aparece al seleccionar 1 o más checkboxes) -->
+    <div x-show="selected.length > 0" x-cloak class="p-3.5 bg-brand-navy-dark text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg border border-slate-700">
+        <div class="flex items-center space-x-2.5">
+            <span class="w-6 h-6 rounded-full bg-brand-orange flex items-center justify-center text-xs font-black text-white" x-text="selected.length"></span>
+            <span class="text-xs font-bold text-slate-200">prospecto(s) seleccionado(s)</span>
+        </div>
+        <form method="POST" action="{% url 'organizations:lead_bulk_delete' %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente los prospectos seleccionados?');" class="flex items-center space-x-2">
+            {% csrf_token %}
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="selected_ids" :value="id">
+            </template>
+            <button type="button" @click="selected = []; allSelected = false;" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-medium transition-colors">
+                Desmarcar todos
+            </button>
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm transition-colors flex items-center space-x-1.5">
+                <span>🗑️ Eliminar seleccionados</span>
+            </button>
+        </form>
+    </div>
+
     <!-- Tabla de Leads -->
     <div class="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-4 w-10 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="allSelected" class="rounded border-slate-300 text-brand-orange focus:ring-brand-orange" title="Seleccionar todos">
+                        </th>
                         <th class="py-3.5 px-4">Prospecto / Empresa</th>
                         <th class="py-3.5 px-4">Contacto Directo</th>
                         <th class="py-3.5 px-4">Origen / Solución</th>
@@ -117,6 +157,9 @@
                 <tbody class="divide-y divide-slate-100 text-xs">
                     {% for lead in page_obj %}
                     <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3.5 px-4 text-center">
+                            <input type="checkbox" class="row-checkbox rounded border-slate-300 text-brand-orange focus:ring-brand-orange" value="{{ lead.id }}" x-model="selected" @change="updateSelectAll()">
+                        </td>
                         <td class="py-3.5 px-4">
                             <div class="font-bold text-slate-900 text-sm">
                                 <a href="{% url 'organizations:lead_detail' lead.id %}" class="hover:text-brand-blue">{{ lead.name }}</a>
@@ -170,15 +213,23 @@
                             <div class="text-slate-400 text-[10px]">IP: {{ lead.ip_address|default:"N/A" }}</div>
                         </td>
                         <td class="py-3.5 px-4 text-right">
-                            <a href="{% url 'organizations:lead_detail' lead.id %}" class="inline-flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:bg-brand-blue hover:text-white hover:border-brand-blue text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors">
-                                <span>Ver / Gestionar</span>
-                                <span>&rarr;</span>
-                            </a>
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{% url 'organizations:lead_detail' lead.id %}" class="inline-flex items-center gap-1 bg-white border border-slate-300 text-slate-700 hover:bg-brand-blue hover:text-white hover:border-brand-blue text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors">
+                                    <span>Ver / Gestionar</span>
+                                    <span>&rarr;</span>
+                                </a>
+                                <form method="post" action="{% url 'organizations:lead_delete' lead.id %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente a este prospecto?');" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors" title="Eliminar prospecto">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-12 text-slate-400">
+                        <td colspan="7" class="text-center py-12 text-slate-400">
                             <p class="text-3xl mb-2">🎯</p>
                             <p class="font-bold text-slate-600">No se encontraron prospectos</p>
                             <p class="text-xs text-slate-400 mt-1">Los nuevos leads capturados desde el formulario de la landing aparecerán automáticamente aquí.</p>
@@ -186,6 +237,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+
             </table>
         </div>
 

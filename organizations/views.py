@@ -647,3 +647,22 @@ def lead_delete(request, lead_id):
         
     return redirect('organizations:lead_detail', lead_id=lead_id)
 
+@login_required
+@user_passes_test(is_humm_admin_check)
+def lead_bulk_delete(request):
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_ids')
+        leads = Lead.objects.filter(id__in=selected_ids)
+        count = leads.count()
+        if count > 0:
+            leads.delete()
+            ActivityLog.objects.create(
+                user=request.user,
+                action="Eliminación Masiva de Prospectos",
+                details=f"Se eliminaron {count} prospectos (leads) de landings."
+            )
+            messages.success(request, f"Se eliminaron {count} prospectos exitosamente.")
+        else:
+            messages.warning(request, "No se seleccionó ningún prospecto para eliminar.")
+    return redirect('organizations:lead_list')
+

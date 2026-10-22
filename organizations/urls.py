@@ -28,6 +28,7 @@ urlpatterns = [
     
     # Prospectos / Leads de Landings
     path('humm-admin/leads/', views.lead_list, name='lead_list'),
+    path('humm-admin/leads/bulk-delete/', views.lead_bulk_delete, name='lead_bulk_delete'),
     path('humm-admin/leads/<int:lead_id>/', views.lead_detail, name='lead_detail'),
     path('humm-admin/leads/<int:lead_id>/delete/', views.lead_delete, name='lead_delete'),
     

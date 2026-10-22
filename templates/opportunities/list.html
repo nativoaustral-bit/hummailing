@@ -3,12 +3,29 @@
 {% block title %}Oportunidades Comerciales | Hummailing{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6" x-data="{
+    selected: [],
+    allSelected: false,
+    toggleAll() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        if (this.allSelected) {
+            this.selected = [];
+            this.allSelected = false;
+        } else {
+            this.selected = Array.from(checkboxes).map(cb => cb.value);
+            this.allSelected = true;
+        }
+    },
+    updateSelectAll() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        this.allSelected = checkboxes.length > 0 && this.selected.length === checkboxes.length;
+    }
+}">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
-            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Oportunidades Comerciales</h1>
-            <p class="text-xs text-slate-500">Contactos interesados que hicieron clic en enlaces de conversión de tus campañas.</p>
+            <h1 class="text-2xl font-black text-brand-navy tracking-tight">Oportunidades Comerciales (Leads)</h1>
+            <p class="text-xs text-slate-500">Contactos interesados que hicieron clic en enlaces de conversión de tus campañas o formularios.</p>
         </div>
     </div>
 
@@ -33,8 +50,31 @@
                 <input type="hidden" name="status" value="{{ current_status }}">
                 <input type="text" name="q" value="{{ query }}" placeholder="Buscar por título, contacto, empresa o correo..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue">
                 <button type="submit" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-colors">Buscar</button>
+                {% if query %}
+                <a href="?status={{ current_status }}" class="text-xs text-slate-400 hover:text-slate-600 px-2 py-2">Limpiar</a>
+                {% endif %}
             </form>
         </div>
+    </div>
+
+    <!-- Barra de Acción Masiva (Aparece al seleccionar 1 o más checkboxes) -->
+    <div x-show="selected.length > 0" x-cloak class="p-3.5 bg-brand-navy-dark text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg border border-slate-700">
+        <div class="flex items-center space-x-2.5">
+            <span class="w-6 h-6 rounded-full bg-brand-blue flex items-center justify-center text-xs font-black text-white" x-text="selected.length"></span>
+            <span class="text-xs font-bold text-slate-200">oportunidad(es) seleccionada(s)</span>
+        </div>
+        <form method="POST" action="{% url 'opportunities:bulk_delete' %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente las oportunidades seleccionadas?');" class="flex items-center space-x-2">
+            {% csrf_token %}
+            <template x-for="id in selected" :key="id">
+                <input type="hidden" name="selected_ids" :value="id">
+            </template>
+            <button type="button" @click="selected = []; allSelected = false;" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl text-xs font-medium transition-colors">
+                Desmarcar todas
+            </button>
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-1.5 rounded-xl shadow-sm transition-colors flex items-center space-x-1.5">
+                <span>🗑️ Eliminar seleccionadas</span>
+            </button>
+        </form>
     </div>
 
     <!-- Tabla de Oportunidades -->
@@ -43,6 +83,9 @@
             <table class="w-full text-left text-xs text-slate-700">
                 <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                     <tr>
+                        <th class="px-4 py-3.5 w-10 text-center">
+                            <input type="checkbox" @click="toggleAll()" :checked="allSelected" class="rounded border-slate-300 text-brand-blue focus:ring-brand-blue" title="Seleccionar todas">
+                        </th>
                         <th class="px-5 py-3.5">Oportunidad / Tema</th>
                         <th class="px-5 py-3.5">Prospecto (Contacto)</th>
                         <th class="px-5 py-3.5">Campaña de Origen</th>
@@ -55,14 +98,17 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for opp in page_obj %}
                     <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="px-4 py-4 text-center">
+                            <input type="checkbox" class="row-checkbox rounded border-slate-300 text-brand-blue focus:ring-brand-blue" value="{{ opp.id }}" x-model="selected" @change="updateSelectAll()">
+                        </td>
                         <td class="px-5 py-4">
-                            <p class="font-bold text-slate-900 text-sm">{{ opp.title }}</p>
+                            <a href="{% url 'opportunities:detail' opp.id %}" class="font-bold text-slate-900 text-sm hover:text-brand-blue transition-colors">{{ opp.title }}</a>
                             <p class="text-xs text-brand-blue font-medium mt-0.5">🎯 {{ opp.interest_topic|default:"Interés general" }}</p>
                             <p class="text-[10px] text-slate-400 mt-0.5">Detectada: {{ opp.created_at|date:"d M Y, H:i" }}</p>
                         </td>
                         <td class="px-5 py-4">
                             <p class="font-bold text-slate-800">{{ opp.contact.first_name }} {{ opp.contact.last_name }}</p>
-                            <p class="text-xs text-slate-500">{{ opp.contact.email }}</p>
+                            <a href="mailto:{{ opp.contact.email }}" class="text-xs text-brand-blue hover:underline">{{ opp.contact.email }}</a>
                             {% if opp.contact.company %}<p class="text-[11px] text-slate-400">🏢 {{ opp.contact.company }}</p>{% endif %}
                             {% if opp.contact.phone %}<p class="text-[11px] text-emerald-600 font-medium">📞 {{ opp.contact.phone }}</p>{% endif %}
                         </td>
@@ -87,20 +133,79 @@
                             {% endif %}
                         </td>
                         <td class="px-5 py-4 text-right">
-                            <a href="{% url 'opportunities:detail' opp.id %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors">
-                                Gestionar →
-                            </a>
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{% url 'opportunities:detail' opp.id %}" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-2xs transition-colors">
+                                    Gestionar →
+                                </a>
+                                <form method="POST" action="{% url 'opportunities:delete' opp.id %}" onsubmit="return confirm('¿Estás seguro de eliminar permanentemente esta oportunidad?');" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 border border-slate-200 hover:border-red-200 text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors" title="Eliminar oportunidad">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-5 py-8 text-center text-slate-400">
-                            No se encontraron oportunidades registradas en esta categoría.
+                        <td colspan="8" class="px-5 py-12 text-center text-slate-400">
+                            <p class="text-3xl mb-2">🎯</p>
+                            <p class="font-bold text-slate-600">No se encontraron oportunidades</p>
+                            <p class="text-xs text-slate-400 mt-1">Los contactos que interactúen con tus campañas o llamados a la acción aparecerán aquí.</p>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <!-- Barra de Paginación y Resumen -->
+        <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+            <div>
+                {% if page_obj.paginator.count > 0 %}
+                Mostrando del <strong class="text-slate-900">{{ page_obj.start_index }}</strong> al <strong class="text-slate-900">{{ page_obj.end_index }}</strong> de <strong class="text-slate-900">{{ page_obj.paginator.count }}</strong> oportunidades
+                {% else %}
+                0 oportunidades
+                {% endif %}
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <div class="flex items-center space-x-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ current_status }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs">
+                    ← Anterior
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-400 cursor-not-allowed">
+                    ← Anterior
+                </span>
+                {% endif %}
+
+                <div class="hidden sm:flex items-center space-x-1 px-2">
+                    {% for p in page_obj.paginator.page_range %}
+                        {% if p == page_obj.number %}
+                        <span class="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-blue text-white font-bold text-xs shadow-2xs">
+                            {{ p }}
+                        </span>
+                        {% elif p > page_obj.number|add:'-3' and p < page_obj.number|add:'3' %}
+                        <a href="?page={{ p }}&q={{ query }}&status={{ current_status }}" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition-colors shadow-2xs">
+                            {{ p }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ current_status }}" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors shadow-2xs">
+                    Siguiente →
+                </a>
+                {% else %}
+                <span class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-medium text-slate-400 cursor-not-allowed">
+                    Siguiente →
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

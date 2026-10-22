@@ -94,6 +94,58 @@ def opportunity_detail(request, opp_id):
     }
     return render(request, 'opportunities/detail.html', context)
 
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def opportunity_delete(request, opp_id):
+    org = request.organization
+    if request.method == 'POST':
+        if getattr(request.user, 'is_humm_master_admin', False) and not org:
+            opportunity = get_object_or_404(Opportunity, id=opp_id)
+        else:
+            opportunity = get_object_or_404(Opportunity, id=opp_id, organization=org)
+            
+        title = opportunity.title
+        opp_org = opportunity.organization
+        contact_name = f"{opportunity.contact.first_name} {opportunity.contact.last_name}".strip() or opportunity.contact.email
+        opportunity.delete()
+        
+        if opp_org:
+            ActivityLog.objects.create(
+                user=request.user,
+                organization=opp_org,
+                action="Eliminación de Oportunidad",
+                details=f"Se eliminó la oportunidad comercial '{title}' ({contact_name})."
+            )
+        messages.success(request, f"Oportunidad '{title}' eliminada exitosamente.")
+    return redirect('opportunities:list')
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def opportunity_bulk_delete(request):
+    org = request.organization
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_ids')
+        if getattr(request.user, 'is_humm_master_admin', False) and not org:
+            qs = Opportunity.objects.filter(id__in=selected_ids)
+        else:
+            qs = Opportunity.objects.filter(id__in=selected_ids, organization=org)
+            
+        count = qs.count()
+        if count > 0:
+            qs.delete()
+            if org:
+                ActivityLog.objects.create(
+                    user=request.user,
+                    organization=org,
+                    action="Eliminación Masiva de Oportunidades",
+                    details=f"Se eliminaron {count} oportunidades comerciales (leads)."
+                )
+            messages.success(request, f"Se eliminaron {count} oportunidades seleccionadas exitosamente.")
+        else:
+            messages.warning(request, "No se seleccionó ninguna oportunidad para eliminar.")
+    return redirect('opportunities:list')
+
+
 def redirect_tracked_link(request, token):
     """
     Ruta pública para registrar clics en enlaces de campañas y crear Oportunidades ante enlaces de conversión.
