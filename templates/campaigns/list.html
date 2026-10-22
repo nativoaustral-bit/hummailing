@@ -220,6 +220,15 @@
             duplicateTagId: '',
             duplicateActionUrl: '',
 
+            init() {
+                const sendingBadge = document.querySelector('.animate-pulse');
+                if (sendingBadge) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 5000);
+                }
+            },
+
             openAudienceModal(id, name, tagId) {
                 this.audienceCampaignId = id;
                 this.audienceCampaignName = name;

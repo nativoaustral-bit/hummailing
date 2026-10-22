@@ -200,3 +200,33 @@ class CampaignAudienceManagementTestCase(TestCase):
         self.assertEqual(duplicate.target_tag, self.tag_clientes)
         self.assertEqual(duplicate.subject, self.campaign.subject)
 
+    @patch('threading.Thread')
+    def test_dispatch_campaign_task_in_eager_mode_spawns_thread(self, mock_thread):
+        from campaigns.views import dispatch_campaign_task
+        with self.settings(CELERY_TASK_ALWAYS_EAGER=True):
+            dispatch_campaign_task(self.campaign.id)
+            self.assertTrue(mock_thread.called)
+
+    def test_campaign_send_prevents_duplicate_sending(self):
+        self.campaign.status = 'sending'
+        self.campaign.save(update_fields=['status'])
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/send/",
+            data={},
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertIn("ya se encuentra en estado", data['message'])
+
+    def test_campaign_send_validates_empty_audience(self):
+        empty_tag = Tag.objects.create(organization=self.org, name="Sin Contactos")
+        response = self.client.post(
+            f"/campaigns/{self.campaign.id}/send/",
+            data={'target_tag': empty_tag.id},
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 400)
+        data = response.json()
+        self.assertIn("No existen destinatarios activos", data['message'])
+

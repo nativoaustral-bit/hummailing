@@ -311,12 +311,36 @@ def campaign_preview(request, campaign_id):
     return render(request, 'campaigns/preview.html', {'campaign': campaign})
 
 import threading
+from django.db.models import Q
+from organizations.models import SuppressionEntry
+from .models import Campaign, CampaignLink, CampaignTemplate, CampaignSchedule
+
+def _run_task_in_thread(campaign_id, test_email=None, sender_user_id=None):
+    from django.db import close_old_connections
+    close_old_connections()
+    try:
+        send_campaign_task(campaign_id, test_email=test_email, sender_user_id=sender_user_id)
+    except Exception as e:
+        logger.error(f"Error ejecutando send_campaign_task en hilo para campaña {campaign_id}: {e}", exc_info=True)
+    finally:
+        close_old_connections()
 
 def dispatch_campaign_task(campaign_id, test_email=None, eta=None, sender_user_id=None):
     """
     Despacha la tarea de envío vía Celery o ejecuta en hilo en segundo plano
-    si Redis/Celery no está activo en el servidor.
+    si Redis/Celery no está activo en el servidor o Celery está en modo eager.
     """
+    is_eager = getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False)
+    if is_eager:
+        t = threading.Thread(
+            target=_run_task_in_thread,
+            args=(campaign_id,),
+            kwargs={'test_email': test_email, 'sender_user_id': sender_user_id}
+        )
+        t.daemon = True
+        t.start()
+        return
+
     try:
         if eta:
             send_campaign_task.apply_async((campaign_id,), eta=eta, kwargs={'sender_user_id': sender_user_id})
@@ -327,7 +351,7 @@ def dispatch_campaign_task(campaign_id, test_email=None, eta=None, sender_user_i
     except Exception as e:
         # Fallback inmediato en segundo plano
         t = threading.Thread(
-            target=send_campaign_task,
+            target=_run_task_in_thread,
             args=(campaign_id,),
             kwargs={'test_email': test_email, 'sender_user_id': sender_user_id}
         )
@@ -416,27 +440,48 @@ def campaign_send(request, campaign_id):
                 })
             else:
                 # Envío Inmediato
+                if campaign.status in ['sending', 'sent']:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"La campaña ya se encuentra en estado '{campaign.get_status_display()}'."
+                    }, status=400)
+
+                suppressed_emails = set(SuppressionEntry.objects.filter(
+                    Q(organization=org) | Q(organization__isnull=True)
+                ).values_list('email', flat=True))
+
+                contacts_qs = Contact.objects.filter(organization=org, status='active').exclude(email__in=suppressed_emails)
+                if campaign.target_tag:
+                    contacts_qs = contacts_qs.filter(tags=campaign.target_tag)
+
+                contact_count = contacts_qs.distinct().count()
+
+                if contact_count > 1000:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': f"La campaña tiene {contact_count} contactos, superando la cuota máxima permitida (1.000 contactos)."
+                    }, status=400)
+
+                if contact_count == 0:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': "No existen destinatarios activos habilitados en la audiencia seleccionada."
+                    }, status=400)
+
                 campaign.status = 'sending'
                 campaign.error_message = ''
                 campaign.save(update_fields=['status', 'error_message'])
                 dispatch_campaign_task(campaign.id, sender_user_id=request.user.id)
                 
-                campaign.refresh_from_db()
-                if campaign.status == 'draft' and campaign.error_message:
-                    return JsonResponse({
-                        'status': 'error',
-                        'message': f"No se pudo despachar el Broadcast: {campaign.error_message}"
-                    }, status=400)
-                    
                 ActivityLog.objects.create(
                     organization=org,
                     user=request.user,
                     action="Despacho de Campaña",
-                    details=f"Campaña '{campaign.name}' despachada vía Resend Broadcasts."
+                    details=f"Campaña '{campaign.name}' despachada vía Resend Broadcasts ({contact_count} destinatarios)."
                 )
                 return JsonResponse({
                     'status': 'success',
-                    'message': 'Campaña enviada de inmediato a todos los destinatarios.'
+                    'message': f'Campaña despachada exitosamente para {contact_count} destinatarios.'
                 })
                 
         except Exception as e:

@@ -85,9 +85,36 @@ def server_status_view(request):
         'logs': logs
     })
 
+def custom_404_view(request, exception=None):
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or 
+        'application/json' in request.headers.get('accept', '') or
+        request.path.startswith('/campaigns/')
+    )
+    if is_ajax:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Recurso no encontrado (HTTP 404).'
+        }, status=404)
+    return render(request, '404.html', status=404)
+
+def apache_504_view(request):
+    is_ajax = (
+        request.headers.get('x-requested-with') == 'XMLHttpRequest' or 
+        'application/json' in request.headers.get('accept', '')
+    )
+    if is_ajax:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El servidor tardó demasiado en responder (Gateway Timeout 504).'
+        }, status=504)
+    return render(request, '500.html', status=504)
+
 handler500 = 'config.urls.custom_500_view'
+handler404 = 'config.urls.custom_404_view'
 
 urlpatterns = [
+    path('504.shtml', apache_504_view, name='apache_504'),
     path('api/server-status/', server_status_view, name='server_status'),
     path('admin/', admin.site.urls),
     path('', include('organizations.urls')),
