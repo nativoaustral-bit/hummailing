@@ -25,10 +25,50 @@
                 <p class="text-[11px] text-slate-400 mt-2">Formatos soportados: CSV (separado por comas) o Libro Excel.</p>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Etiqueta de Asignación Automática (Opcional)</label>
-                <input type="text" name="tag" placeholder="ej. Base Clientes 2026, Minería Santiago..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
-                <p class="text-[10px] text-slate-400 mt-1">Todos los contactos del archivo se asociarán automáticamente a esta etiqueta.</p>
+            <!-- Asignación de Etiqueta -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3" x-data="{ tagOption: '{% if tags %}existing{% else %}new{% endif %}' }">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-800 uppercase">🏷️ Asignar Etiqueta a Contactos Importados (Opcional)</label>
+                    <a href="{% url 'contacts:tag_list' %}" target="_blank" class="text-[11px] font-bold text-brand-blue hover:underline flex items-center space-x-1">
+                        <span>Gestionar Etiquetas</span>
+                        <span>↗</span>
+                    </a>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4 text-xs">
+                    {% if tags %}
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="radio" name="tag_mode" value="existing" x-model="tagOption" class="text-brand-blue focus:ring-brand-blue">
+                        <span class="font-medium text-slate-700">Elegir etiqueta existente</span>
+                    </label>
+                    {% endif %}
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="radio" name="tag_mode" value="new" x-model="tagOption" class="text-brand-blue focus:ring-brand-blue">
+                        <span class="font-medium text-slate-700">Crear nueva etiqueta</span>
+                    </label>
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="radio" name="tag_mode" value="none" x-model="tagOption" class="text-brand-blue focus:ring-brand-blue">
+                        <span class="font-medium text-slate-700">Sin etiqueta</span>
+                    </label>
+                </div>
+
+                <!-- Selector de etiqueta existente -->
+                {% if tags %}
+                <div x-show="tagOption === 'existing'" class="pt-1">
+                    <select name="existing_tag_id" class="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                        <option value="">-- Selecciona una etiqueta existente --</option>
+                        {% for t in tags %}
+                        <option value="{{ t.id }}">🏷️ {{ t.name }} ({{ t.contact_count }} contacto{{ t.contact_count|pluralize }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Input para nueva etiqueta -->
+                <div x-show="tagOption === 'new'" class="pt-1" {% if tags %}style="display: none;"{% endif %}>
+                    <input type="text" name="new_tag" placeholder="Nombre de la nueva etiqueta (ej. Base Clientes 2026, Minería Santiago...)" class="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    <p class="text-[10px] text-slate-400 mt-1">Se creará automáticamente en la plataforma y se asignará a todos los contactos del archivo.</p>
+                </div>
             </div>
 
             <!-- Guía de Columnas -->

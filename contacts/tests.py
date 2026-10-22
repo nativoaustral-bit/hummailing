@@ -155,3 +155,87 @@ class ContactImportTestCase(TestCase):
         self.assertEqual(len(resp_p2.context['page_obj']), 10)
         self.assertTrue(resp_p2.context['page_obj'].has_previous())
 
+    def test_tag_crud_lifecycle(self):
+        """Prueba ciclo completo de vida de etiquetas: crear, listar, renombrar y eliminar."""
+        self.client.force_login(self.admin_user)
+        
+        # 1. Crear etiqueta
+        resp = self.client.post('/contacts/tags/create/', {'name': 'VIP Clientes'}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        tag = Tag.objects.filter(organization=self.org, name='VIP Clientes').first()
+        self.assertIsNotNone(tag)
+        
+        # 2. Listar etiquetas
+        resp_list = self.client.get('/contacts/tags/')
+        self.assertEqual(resp_list.status_code, 200)
+        self.assertContains(resp_list, 'VIP Clientes')
+        
+        # 3. Renombrar etiqueta
+        resp_edit = self.client.post(f'/contacts/tags/{tag.id}/edit/', {'name': 'Super VIP'}, follow=True)
+        self.assertEqual(resp_edit.status_code, 200)
+        tag.refresh_from_db()
+        self.assertEqual(tag.name, 'Super VIP')
+        
+        # 4. Eliminar etiqueta
+        resp_del = self.client.post(f'/contacts/tags/{tag.id}/delete/', follow=True)
+        self.assertEqual(resp_del.status_code, 200)
+        self.assertFalse(Tag.objects.filter(id=tag.id).exists())
+
+    def test_import_with_pre_created_tag(self):
+        """Verifica que al importar contactos se pueda seleccionar un tag pre-creado por ID."""
+        tag = Tag.objects.create(organization=self.org, name="Segmento Agro")
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["email", "nombre"])
+        ws.append(["agro1@test.com", "Agro Uno"])
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        
+        f = SimpleUploadedFile("agro.xlsx", buf.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        self.client.force_login(self.admin_user)
+        resp = self.client.post('/contacts/import/', {'file': f, 'existing_tag_id': tag.id}, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        
+        c = Contact.objects.filter(organization=self.org, email="agro1@test.com").first()
+        self.assertIsNotNone(c)
+        self.assertTrue(c.tags.filter(id=tag.id).exists())
+
+    def test_contact_create_and_edit_with_tags(self):
+        """Verifica selección de etiquetas existentes y adición de nuevas al crear y editar contactos."""
+        tag1 = Tag.objects.create(organization=self.org, name="Tag 1")
+        tag2 = Tag.objects.create(organization=self.org, name="Tag 2")
+        
+        self.client.force_login(self.admin_user)
+        # 1. Crear contacto seleccionando tag1 y escribiendo nueva etiqueta 'Tag 3'
+        resp_create = self.client.post('/contacts/create/', {
+            'email': 'pepe@test.com',
+            'first_name': 'Pepe',
+            'tags': [str(tag1.id)],
+            'new_tags': 'Tag 3',
+        }, follow=True)
+        self.assertEqual(resp_create.status_code, 200)
+        
+        c = Contact.objects.get(organization=self.org, email="pepe@test.com")
+        self.assertTrue(c.tags.filter(name="Tag 1").exists())
+        self.assertTrue(c.tags.filter(name="Tag 3").exists())
+        self.assertFalse(c.tags.filter(name="Tag 2").exists())
+        
+        # 2. Editar contacto cambiando a tag2 y agregando 'Tag 4'
+        tag3 = Tag.objects.get(organization=self.org, name="Tag 3")
+        resp_edit = self.client.post(f'/contacts/{c.id}/edit/', {
+            'email': 'pepe@test.com',
+            'first_name': 'Pepe Editado',
+            'tags': [str(tag2.id)],
+            'new_tags': 'Tag 4',
+        }, follow=True)
+        self.assertEqual(resp_edit.status_code, 200)
+        
+        c.refresh_from_db()
+        self.assertEqual(c.first_name, 'Pepe Editado')
+        self.assertFalse(c.tags.filter(name="Tag 1").exists())
+        self.assertTrue(c.tags.filter(name="Tag 2").exists())
+        self.assertTrue(c.tags.filter(name="Tag 4").exists())
+
+

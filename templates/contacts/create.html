@@ -56,6 +56,37 @@
                 </div>
             </div>
 
+            <!-- Sección de Etiquetas -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-bold text-slate-800 uppercase">🏷️ Asignar Etiquetas (Opcional)</label>
+                    <a href="{% url 'contacts:tag_list' %}" target="_blank" class="text-[11px] font-bold text-brand-blue hover:underline flex items-center space-x-1">
+                        <span>Gestionar Etiquetas</span>
+                        <span>↗</span>
+                    </a>
+                </div>
+
+                {% if available_tags %}
+                <div>
+                    <p class="text-[11px] font-medium text-slate-600 mb-2">Selecciona las etiquetas que aplican a este contacto:</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for t in available_tags %}
+                        <label class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-700 hover:border-slate-400 cursor-pointer transition-all select-none">
+                            <input type="checkbox" name="tags" value="{{ t.id }}" class="rounded text-brand-blue focus:ring-brand-blue h-3.5 w-3.5">
+                            <span>{{ t.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="pt-2 border-t border-slate-200/60">
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1">O escribe nuevas etiquetas (separadas por comas):</label>
+                    <input type="text" name="new_tags" placeholder="ej. Clientes VIP, Taller 2026, Minería" class="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-brand-blue focus:outline-none">
+                    <p class="text-[10px] text-slate-400 mt-1">Si escribes nombres que no existen, se crearán automáticamente.</p>
+                </div>
+            </div>
+
             <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
                 <a href="{% url 'contacts:list' %}" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2">Cancelar</a>
                 <button type="submit" class="bg-brand-blue hover:bg-brand-navy text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-colors">

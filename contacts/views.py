@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from .models import Contact, Tag, Segment
 from organizations.models import SuppressionEntry, ActivityLog
@@ -57,7 +57,6 @@ def contact_list(request):
 @login_required
 @role_required(['org_admin'])
 def contact_create(request):
-
     org = request.organization
     if not org:
         messages.error(request, "No tienes una organización activa seleccionada.")
@@ -77,7 +76,8 @@ def contact_create(request):
         
         if not email:
             messages.error(request, "El correo electrónico es obligatorio.")
-            return render(request, 'contacts/create.html')
+            available_tags = Tag.objects.filter(organization=org).order_by('name')
+            return render(request, 'contacts/create.html', {'available_tags': available_tags})
             
         # Verificar límite de contactos
         if Contact.objects.filter(organization=org).count() >= org.max_contacts:
@@ -99,14 +99,29 @@ def contact_create(request):
                 'source': source,
             }
         )
+        
+        # Procesar etiquetas pre-existentes seleccionadas
+        selected_tag_ids = request.POST.getlist('tags')
+        if selected_tag_ids:
+            tags_to_add = Tag.objects.filter(id__in=selected_tag_ids, organization=org)
+            contact.tags.add(*tags_to_add)
+            
+        # Procesar nuevas etiquetas escritas por el usuario
+        new_tags_str = request.POST.get('new_tags', '').strip()
+        if new_tags_str:
+            for name in [t.strip() for t in new_tags_str.split(',') if t.strip()]:
+                tag_obj, _ = Tag.objects.get_or_create(organization=org, name=name)
+                contact.tags.add(tag_obj)
+                
         if created:
             messages.success(request, f"Contacto {email} creado con éxito.")
         else:
-            messages.warning(request, f"El contacto {email} ya existe en tu organización.")
+            messages.warning(request, f"El contacto {email} ya existía y sus etiquetas fueron actualizadas.")
             
         return redirect('contacts:list')
         
-    return render(request, 'contacts/create.html')
+    available_tags = Tag.objects.filter(organization=org).order_by('name')
+    return render(request, 'contacts/create.html', {'available_tags': available_tags})
 
 @login_required
 @role_required(['org_admin'])
@@ -140,20 +155,37 @@ def contact_update(request, contact_id):
         contact.internal_notes = request.POST.get('internal_notes', '').strip()
         contact.save()
         
-        # Procesar etiquetas
-        tags_str = request.POST.get('tags_string', '')
+        # Procesar etiquetas: reiniciar y asignar seleccionadas + nuevas
         contact.tags.clear()
-        if tags_str:
-            tag_names = [t.strip() for t in tags_str.split(',') if t.strip()]
+        
+        # 1. Etiquetas pre-creadas seleccionadas
+        selected_tag_ids = request.POST.getlist('tags')
+        if selected_tag_ids:
+            tags_to_add = Tag.objects.filter(id__in=selected_tag_ids, organization=org)
+            contact.tags.add(*tags_to_add)
+            
+        # 2. Nuevas etiquetas escritas
+        new_tags_str = request.POST.get('new_tags', '').strip()
+        legacy_tags_str = request.POST.get('tags_string', '').strip()
+        tags_input = new_tags_str or legacy_tags_str
+        if tags_input:
+            tag_names = [t.strip() for t in tags_input.split(',') if t.strip()]
             for name in tag_names:
                 tag, _ = Tag.objects.get_or_create(organization=org, name=name)
                 contact.tags.add(tag)
                 
-        messages.success(request, f"Contacto {contact.email} actualizado.")
+        messages.success(request, f"Contacto {contact.email} actualizado con éxito.")
         return redirect('contacts:list')
         
+    available_tags = Tag.objects.filter(organization=org).order_by('name')
+    contact_tag_ids = set(contact.tags.values_list('id', flat=True))
     tags_string = ", ".join([t.name for t in contact.tags.all()])
-    return render(request, 'contacts/edit.html', {'contact': contact, 'tags_string': tags_string})
+    return render(request, 'contacts/edit.html', {
+        'contact': contact,
+        'available_tags': available_tags,
+        'contact_tag_ids': contact_tag_ids,
+        'tags_string': tags_string
+    })
 
 import logging
 from .utils import parse_imported_file
@@ -174,7 +206,9 @@ def import_contacts(request):
             return redirect('contacts:import')
             
         uploaded_file = request.FILES['file']
-        tag_name = request.POST.get('tag', '').strip()
+        existing_tag_id = request.POST.get('existing_tag_id', '').strip()
+        new_tag_name = request.POST.get('new_tag', '').strip()
+        legacy_tag_name = request.POST.get('tag', '').strip()
         
         try:
             contacts_data, parse_error = parse_imported_file(uploaded_file)
@@ -185,11 +219,15 @@ def import_contacts(request):
             created_count = 0
             updated_count = 0
             skipped_unsub_count = 0
-            invalid_count = 0
             
+            # Determinar etiqueta de asignación
             tag = None
-            if tag_name:
-                tag, _ = Tag.objects.get_or_create(organization=org, name=tag_name)
+            if existing_tag_id:
+                tag = Tag.objects.filter(id=existing_tag_id, organization=org).first()
+            elif new_tag_name:
+                tag, _ = Tag.objects.get_or_create(organization=org, name=new_tag_name)
+            elif legacy_tag_name:
+                tag, _ = Tag.objects.get_or_create(organization=org, name=legacy_tag_name)
                 
             # Obtener supresiones previas de la organización
             suppressed_emails = set(SuppressionEntry.objects.filter(
@@ -261,14 +299,17 @@ def import_contacts(request):
                     f"Se detuvo la importación porque tu organización alcanzó el límite de {org.max_contacts} contactos permitidos."
                 )
                 
+            tag_info = f" con etiqueta '{tag.name}'" if tag else ""
             ActivityLog.objects.create(
                 organization=org,
                 user=request.user,
                 action="Importación de Contactos",
-                details=f"Importación ({uploaded_file.name}): {created_count} creados, {updated_count} actualizados, {skipped_unsub_count} omitidos por baja previa."
+                details=f"Importación ({uploaded_file.name}){tag_info}: {created_count} creados, {updated_count} actualizados, {skipped_unsub_count} omitidos por baja previa."
             )
             
             msg = f"¡Importación completada con éxito! Creados: {created_count}, Actualizados: {updated_count}."
+            if tag:
+                msg += f" Asignados a la etiqueta '{tag.name}'."
             if skipped_unsub_count > 0:
                 msg += f" Omitidos por desuscripción previa: {skipped_unsub_count}."
             messages.success(request, msg)
@@ -279,5 +320,108 @@ def import_contacts(request):
             
         return redirect('contacts:import')
         
-    return render(request, 'contacts/import.html')
+    tags = Tag.objects.filter(organization=org).annotate(contact_count=Count('contact')).order_by('name') if org else Tag.objects.none()
+    return render(request, 'contacts/import.html', {'tags': tags})
+
+# ==============================================================================
+# GESTIÓN DE ETIQUETAS (CRUD)
+# ==============================================================================
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def tag_list(request):
+    org = request.organization
+    if not org:
+        messages.error(request, "No tienes una organización activa seleccionada.")
+        return redirect('contacts:list')
+        
+    tags = Tag.objects.filter(organization=org).annotate(
+        contact_count=Count('contact')
+    ).order_by('name')
+    
+    return render(request, 'contacts/tag_list.html', {
+        'tags': tags,
+        'total_tags': tags.count(),
+    })
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def tag_create(request):
+    org = request.organization
+    if not org:
+        messages.error(request, "No tienes una organización activa seleccionada.")
+        return redirect('contacts:list')
+        
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if not name:
+            messages.error(request, "El nombre de la etiqueta no puede estar vacío.")
+            return redirect('contacts:tag_list')
+            
+        tag, created = Tag.objects.get_or_create(organization=org, name=name)
+        if created:
+            ActivityLog.objects.create(
+                organization=org,
+                user=request.user,
+                action="Creación de Etiqueta",
+                details=f"Etiqueta '{name}' creada con éxito."
+            )
+            messages.success(request, f"Etiqueta '{name}' creada con éxito.")
+        else:
+            messages.warning(request, f"La etiqueta '{name}' ya existe en tu organización.")
+            
+    return redirect('contacts:tag_list')
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def tag_update(request, tag_id):
+    org = request.organization
+    tag = get_object_or_404(Tag, id=tag_id, organization=org)
+    
+    if request.method == 'POST':
+        new_name = request.POST.get('name', '').strip()
+        if not new_name:
+            messages.error(request, "El nombre de la etiqueta no puede estar vacío.")
+            return redirect('contacts:tag_list')
+            
+        if new_name != tag.name:
+            if Tag.objects.filter(organization=org, name=new_name).exclude(id=tag.id).exists():
+                messages.error(request, f"Ya existe otra etiqueta llamada '{new_name}' en tu organización.")
+                return redirect('contacts:tag_list')
+                
+            old_name = tag.name
+            tag.name = new_name
+            tag.save(update_fields=['name'])
+            
+            ActivityLog.objects.create(
+                organization=org,
+                user=request.user,
+                action="Edición de Etiqueta",
+                details=f"Etiqueta renombrada de '{old_name}' a '{new_name}'."
+            )
+            messages.success(request, f"Etiqueta actualizada a '{new_name}' exitosamente.")
+            
+    return redirect('contacts:tag_list')
+
+@login_required
+@role_required(['org_admin', 'campaign_editor'])
+def tag_delete(request, tag_id):
+    org = request.organization
+    tag = get_object_or_404(Tag, id=tag_id, organization=org)
+    
+    if request.method == 'POST':
+        tag_name = tag.name
+        count = tag.contact_set.count()
+        tag.delete()
+        
+        ActivityLog.objects.create(
+            organization=org,
+            user=request.user,
+            action="Eliminación de Etiqueta",
+            details=f"Etiqueta '{tag_name}' eliminada (se desvinculó de {count} contactos)."
+        )
+        messages.success(request, f"Etiqueta '{tag_name}' eliminada (se desvinculó de {count} contactos).")
+        
+    return redirect('contacts:tag_list')
+
 
